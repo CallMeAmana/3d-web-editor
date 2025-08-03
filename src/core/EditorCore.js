@@ -685,7 +685,18 @@ class EditorCore {
      * Play scene - start script execution
      */
     playScene() {
+        if (this.editorMode === 'play') {
+            console.log('Scene is already playing');
+            return;
+        }
+        
         this.editorMode = 'play';
+        
+        // Initialize all script components
+        if (this.componentSystem) {
+            this.componentSystem.startScriptExecution();
+        }
+        
         this.eventBus.emit(EventBus.Events.SCENE_PLAY, { timestamp: Date.now() });
         this.showMessage('Scene playing - scripts are now active', 'success');
         
@@ -697,7 +708,16 @@ class EditorCore {
      * Pause scene - pause script execution
      */
     pauseScene() {
+        if (this.editorMode !== 'play') {
+            console.log('Scene is not playing, cannot pause');
+            return;
+        }
+        
         this.editorMode = 'pause';
+        
+        // Pause script execution
+        // Scripts will check editorMode in their update method
+        
         this.eventBus.emit(EventBus.Events.SCENE_PAUSE, { timestamp: Date.now() });
         this.showMessage('Scene paused', 'info');
         
@@ -709,7 +729,16 @@ class EditorCore {
      * Stop scene - stop script execution and reset
      */
     stopScene() {
+        const wasPlaying = this.editorMode === 'play' || this.editorMode === 'pause';
+        
         this.editorMode = 'edit';
+        
+        // Stop and reset all script components
+        if (this.componentSystem && wasPlaying) {
+            this.componentSystem.stopScriptExecution();
+            this.componentSystem.resetScriptExecution();
+        }
+        
         this.eventBus.emit(EventBus.Events.SCENE_STOP, { timestamp: Date.now() });
         this.showMessage('Scene stopped - back to edit mode', 'info');
         

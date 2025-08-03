@@ -13,6 +13,9 @@ class ComponentSystem {
         // Script system
         this.scripts = new Map(); // Map of script ID to script instance
         this.scriptTemplates = new Map(); // Map of script name to script template
+        this.scriptStartTime = 0; // Time when scripts started
+        this.scriptPauseTime = 0; // Time when scripts were paused
+        this.totalPausedTime = 0; // Total time scripts have been paused
         
         // Component update system
         this.updateableComponents = new Set(); // Components that need regular updates
@@ -95,29 +98,42 @@ class ComponentSystem {
             
             createScriptContext() {
                 const editor = EditorCore.getInstance();
-                const entity = this.entity;
+                const entityId = this.entity;
                 
                 return {
                     // Entity reference
-                    entity: entity,
+                    entity: entityId,
                     
                     // Component access
                     getComponent: (componentName) => {
-                        return ComponentSystem.getInstance().getComponent(entity, componentName);
+                        return ComponentSystem.getInstance().getComponent(entityId, componentName);
                     },
                     
                     addComponent: (componentName, data) => {
-                        return ComponentSystem.getInstance().addComponent(entity, componentName, data);
+                        return ComponentSystem.getInstance().addComponent(entityId, componentName, data);
                     },
                     
                     removeComponent: (componentName) => {
-                        return ComponentSystem.getInstance().removeComponent(entity, componentName);
+                        return ComponentSystem.getInstance().removeComponent(entityId, componentName);
                     },
                     
                     // Scene access
                     findObject: (name) => {
-                        return Array.from(editor.sceneManager.objects.values())
-                            .find(obj => obj.name === name);
+                        if (typeof name === 'string') {
+                            return Array.from(editor.sceneManager.objects.values())
+                                .find(obj => obj.name === name);
+                        } else {
+                            // If name is actually an entity ID
+                            return editor.sceneManager.objects.get(name);
+                        }
+                    },
+                    
+                    // Get current object
+                    gameObject: editor.sceneManager.objects.get(entityId),
+                    
+                    // Get this object specifically
+                    this: {
+                        gameObject: editor.sceneManager.objects.get(entityId)
                     },
                     
                     createObject: (type, options) => {
@@ -149,7 +165,8 @@ class ComponentSystem {
                     // Time
                     time: {
                         deltaTime: 0.016, // Will be updated in update loop
-                        time: 0
+                        time: 0,
+                        timeScale: 1
                     },
                     
                     // Input (basic)
@@ -180,7 +197,13 @@ class ComponentSystem {
                 // Update time in context
                 if (this.scriptInstance.context) {
                     this.scriptInstance.context.time.deltaTime = deltaTime;
-                    this.scriptInstance.context.time.time += deltaTime;
+                    this.scriptInstance.context.time.time += deltaTime * this.scriptInstance.context.time.timeScale;
+                    
+                    // Update gameObject reference in case it changed
+                    const editor = EditorCore.getInstance();
+                    const currentObject = editor.sceneManager.objects.get(this.entity);
+                    this.scriptInstance.context.gameObject = currentObject;
+                    this.scriptInstance.context.this.gameObject = currentObject;
                 }
                 
                 // Call update method if it exists
@@ -559,9 +582,10 @@ function start() {
 }
 
 function update() {
-    if (this.gameObject && this.gameObject.mesh) {
+    var obj = gameObject;
+    if (obj && obj.mesh) {
         // Rotate around Y axis
-        this.gameObject.mesh.rotation.y += (rotationSpeed * Math.PI / 180) * this.context.time.deltaTime;
+        obj.mesh.rotation.y += (rotationSpeed * Math.PI / 180) * time.deltaTime;
     }
 }
 
@@ -648,12 +672,99 @@ function onDestroy() {
      * Update all components that need regular updates
      */
     updateComponents(deltaTime) {
+        // Only update if we're in a valid state
+        const editor = EditorCore.getInstance();
+        if (!editor) return;
+        
+        // Update script time tracking
+        if (editor.editorMode === 'play') {
+            // Scripts are running
+        } else if (editor.editorMode === 'pause') {
+            // Scripts are paused - don't update script components
+            return;
+        } else {
+            // Scripts are stopped - don't update script components
+            return;
+        }
+        
         this.entityComponents.forEach((components, entityId) => {
             components.forEach((component, componentName) => {
                 if (typeof component.update === 'function') {
                     component.update(deltaTime);
                 }
             });
+        });
+    }
+
+    /**
+     * Start script execution (called when play button is pressed)
+     */
+    startScriptExecution() {
+        console.log('Starting script execution...');
+        this.scriptStartTime = performance.now();
+        this.totalPausedTime = 0;
+        
+        // Call start() method on all script components
+        this.entityComponents.forEach((components, entityId) => {
+            const scriptComponent = components.get('Script');
+            if (scriptComponent && scriptComponent.scriptInstance) {
+                // Reset time context
+                if (scriptComponent.scriptInstance.context) {
+                    scriptComponent.scriptInstance.context.time.time = 0;
+                    scriptComponent.scriptInstance.context.time.deltaTime = 0;
+                }
+                
+                // Call start method
+                if (typeof scriptComponent.scriptInstance.start === 'function') {
+                    try {
+                        scriptComponent.scriptInstance.start();
+                        console.log(`Started script for entity: ${entityId}`);
+                    } catch (error) {
+                        console.error(`Error starting script for entity ${entityId}:`, error);
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Stop script execution (called when stop button is pressed)
+     */
+    stopScriptExecution() {
+        console.log('Stopping script execution...');
+        
+        // Call onDestroy() method on all script components
+        this.entityComponents.forEach((components, entityId) => {
+            const scriptComponent = components.get('Script');
+            if (scriptComponent && scriptComponent.scriptInstance) {
+                if (typeof scriptComponent.scriptInstance.onDestroy === 'function') {
+                    try {
+                        scriptComponent.scriptInstance.onDestroy();
+                        console.log(`Destroyed script for entity: ${entityId}`);
+                    } catch (error) {
+                        console.error(`Error destroying script for entity ${entityId}:`, error);
+                    }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Reset script execution state
+     */
+    resetScriptExecution() {
+        console.log('Resetting script execution state...');
+        this.scriptStartTime = 0;
+        this.scriptPauseTime = 0;
+        this.totalPausedTime = 0;
+        
+        // Reset time in all script contexts
+        this.entityComponents.forEach((components, entityId) => {
+            const scriptComponent = components.get('Script');
+            if (scriptComponent && scriptComponent.scriptInstance && scriptComponent.scriptInstance.context) {
+                scriptComponent.scriptInstance.context.time.time = 0;
+                scriptComponent.scriptInstance.context.time.deltaTime = 0;
+            }
         });
     }
 
