@@ -100,6 +100,25 @@ body {
     box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3);
 }
 
+/* Scene control buttons */
+#play-scene.active {
+    background: #4caf50;
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
+}
+
+#pause-scene.active {
+    background: #ff9800;
+    border-color: #ff9800;
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3);
+}
+
+#stop-scene.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.3);
+}
+
 .tool-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;

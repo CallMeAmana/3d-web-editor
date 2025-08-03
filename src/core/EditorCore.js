@@ -71,6 +71,9 @@ class EditorCore {
             // Setup auto-save
             this.setupAutoSave();
             
+            // Initialize scene control buttons
+            this.updateSceneControlButtons();
+            
             // Mark as initialized
             this.isInitialized = true;
             
@@ -228,6 +231,22 @@ class EditorCore {
         
         document.getElementById('camera-reset')?.addEventListener('click', () => {
             this.eventBus.emit(EventBus.Events.TOOL_ACTIVATED, { tool: 'camera-reset' });
+        });
+        
+        // Scene control buttons
+        document.getElementById('play-scene')?.addEventListener('click', () => {
+            console.log('Play button clicked');
+            this.playScene();
+        });
+        
+        document.getElementById('pause-scene')?.addEventListener('click', () => {
+            console.log('Pause button clicked');
+            this.pauseScene();
+        });
+        
+        document.getElementById('stop-scene')?.addEventListener('click', () => {
+            console.log('Stop button clicked');
+            this.stopScene();
         });
     }
 
@@ -660,6 +679,71 @@ class EditorCore {
     showError(title, message) {
         console.error(title, message);
         this.showMessage(`${title}: ${message}`, 'error');
+    }
+
+    /**
+     * Play scene - start script execution
+     */
+    playScene() {
+        this.editorMode = 'play';
+        this.eventBus.emit(EventBus.Events.SCENE_PLAY, { timestamp: Date.now() });
+        this.showMessage('Scene playing - scripts are now active', 'success');
+        
+        // Update button states
+        this.updateSceneControlButtons();
+    }
+
+    /**
+     * Pause scene - pause script execution
+     */
+    pauseScene() {
+        this.editorMode = 'pause';
+        this.eventBus.emit(EventBus.Events.SCENE_PAUSE, { timestamp: Date.now() });
+        this.showMessage('Scene paused', 'info');
+        
+        // Update button states
+        this.updateSceneControlButtons();
+    }
+
+    /**
+     * Stop scene - stop script execution and reset
+     */
+    stopScene() {
+        this.editorMode = 'edit';
+        this.eventBus.emit(EventBus.Events.SCENE_STOP, { timestamp: Date.now() });
+        this.showMessage('Scene stopped - back to edit mode', 'info');
+        
+        // Update button states
+        this.updateSceneControlButtons();
+    }
+
+    /**
+     * Update scene control button states
+     */
+    updateSceneControlButtons() {
+        const playBtn = document.getElementById('play-scene');
+        const pauseBtn = document.getElementById('pause-scene');
+        const stopBtn = document.getElementById('stop-scene');
+        
+        if (playBtn && pauseBtn && stopBtn) {
+            // Reset all buttons
+            playBtn.classList.remove('active');
+            pauseBtn.classList.remove('active');
+            stopBtn.classList.remove('active');
+            
+            // Set active button based on mode
+            switch (this.editorMode) {
+                case 'play':
+                    playBtn.classList.add('active');
+                    break;
+                case 'pause':
+                    pauseBtn.classList.add('active');
+                    break;
+                case 'edit':
+                    stopBtn.classList.add('active');
+                    break;
+            }
+        }
     }
 
     /**

@@ -27,6 +27,12 @@
             </div>
             
             <div class="toolbar-group">
+                <button class="tool-btn" id="play-scene" title="Play Scene">▶️</button>
+                <button class="tool-btn" id="pause-scene" title="Pause Scene">⏸️</button>
+                <button class="tool-btn" id="stop-scene" title="Stop Scene">⏹️</button>
+            </div>
+            
+            <div class="toolbar-group">
                 <button class="tool-btn" id="move-tool" title="Move Tool">✋</button>
                 <button class="tool-btn" id="rotate-tool" title="Rotate Tool">🔄</button>
                 <button class="tool-btn" id="scale-tool" title="Scale Tool">📏</button>
@@ -284,6 +290,7 @@
                 
                 // Initialize editor core
                 editorCore = new EditorCore(eventBus, sceneManager, componentSystem, assetManager);
+                console.log('EditorCore instance created:', editorCore);
                 EditorCore.setInstance(editorCore);
                 updateLoadingProgress(60, 'Loading plugins...');
                 
@@ -302,6 +309,7 @@
                 
                 // Initialize the editor
                 await editorCore.init();
+                console.log('EditorCore initialized');
                 updateLoadingProgress(90, 'Loading default plugins...');
                 
                 // Load some default plugins
@@ -568,6 +576,16 @@
         document.addEventListener('DOMContentLoaded', () => {
             setupEventHandlers();
             initializeApp();
+            // Direct test listeners for scene control buttons
+            document.getElementById('play-scene')?.addEventListener('click', () => {
+                console.log('Direct test: Play button clicked');
+            });
+            document.getElementById('pause-scene')?.addEventListener('click', () => {
+                console.log('Direct test: Pause button clicked');
+            });
+            document.getElementById('stop-scene')?.addEventListener('click', () => {
+                console.log('Direct test: Stop button clicked');
+            });
         });
         
         // Handle window resize

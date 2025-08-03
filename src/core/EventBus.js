@@ -269,6 +269,56 @@ EventBus.Events = {
     VIEWPORT_MODE_CHANGED: 'viewport:mode_changed'
 };
 
+// Define event types
+EventBus.Events = {
+    // Editor events
+    EDITOR_READY: 'editor:ready',
+    EDITOR_COMMAND_EXECUTED: 'editor:command:executed',
+    
+    // Scene events
+    SCENE_CHANGED: 'scene:changed',
+    SCENE_PLAY: 'scene:play',
+    SCENE_PAUSE: 'scene:pause',
+    SCENE_STOP: 'scene:stop',
+    SCENE_CLEARED: 'scene:cleared',
+    SCENE_IMPORTED: 'scene:imported',
+    
+    // Object events
+    OBJECT_CREATED: 'object:created',
+    OBJECT_DELETED: 'object:deleted',
+    OBJECT_SELECTED: 'object:selected',
+    OBJECT_DESELECTED: 'object:deselected',
+    OBJECT_TRANSFORMED: 'object:transformed',
+    
+    // Component events
+    COMPONENT_ADDED: 'component:added',
+    COMPONENT_REMOVED: 'component:removed',
+    COMPONENT_UPDATED: 'component:updated',
+    
+    // Tool events
+    TOOL_ACTIVATED: 'tool:activated',
+    TOOL_DEACTIVATED: 'tool:deactivated',
+    
+    // Viewport events
+    VIEWPORT_RESIZED: 'viewport:resized',
+    VIEWPORT_MODE_CHANGED: 'viewport:mode:changed',
+    CAMERA_MOVED: 'camera:moved',
+    CAMERA_RESET: 'camera:reset',
+    
+    // Asset events
+    ASSET_LOADED: 'asset:loaded',
+    ASSET_IMPORTED: 'asset:imported',
+    ASSET_DELETED: 'asset:deleted',
+    
+    // Plugin events
+    PLUGIN_LOADED: 'plugin:loaded',
+    PLUGIN_UNLOADED: 'plugin:unloaded',
+    PLUGIN_ERROR: 'plugin:error',
+    
+    // UI events
+    UI_PANEL_TOGGLED: 'ui:panel:toggled'
+};
+
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = EventBus;

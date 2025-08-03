@@ -1,6 +1,5 @@
 /**
  * SceneManager - Manages the 3D scene, objects, and rendering
- 
  */
 class SceneManager {
     constructor(eventBus) {

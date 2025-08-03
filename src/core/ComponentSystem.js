@@ -173,6 +173,10 @@ class ComponentSystem {
             update(deltaTime) {
                 if (!this.enabled || !this.scriptInstance) return;
                 
+                // Only update if scene is in play mode
+                const editor = EditorCore.getInstance();
+                if (editor.editorMode !== 'play') return;
+                
                 // Update time in context
                 if (this.scriptInstance.context) {
                     this.scriptInstance.context.time.deltaTime = deltaTime;
@@ -541,6 +545,29 @@ class ComponentSystem {
                         break;
                 }
             }
+        `);
+
+        // Simple Rotate Script
+        this.registerScriptTemplate('Simple Rotate', `
+// Simple Rotate Script
+// Makes the object rotate around its Y axis
+
+var rotationSpeed = 1.0; // degrees per second
+
+function start() {
+    console.log('Simple rotate script started');
+}
+
+function update() {
+    if (this.gameObject && this.gameObject.mesh) {
+        // Rotate around Y axis
+        this.gameObject.mesh.rotation.y += (rotationSpeed * Math.PI / 180) * this.context.time.deltaTime;
+    }
+}
+
+function onDestroy() {
+    console.log('Simple rotate script destroyed');
+}
         `);
 
         console.log('Built-in script templates registered');

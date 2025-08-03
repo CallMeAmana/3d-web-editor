@@ -819,11 +819,11 @@ window.${pluginData.name.replace(/\s+/g, '')}Plugin = ${pluginData.name.replace(
         
         // Add component button only for mesh objects
         if (this.canObjectHaveComponents(object)) {
-            html += `
-                <div class="add-component">
-                    <button id="add-component-btn">Add Component</button>
-                </div>
-            `;
+        html += `
+            <div class="add-component">
+                <button id="add-component-btn">Add Component</button>
+            </div>
+        `;
         }
         
         inspectorContent.innerHTML = html;

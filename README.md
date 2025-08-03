@@ -50,7 +50,7 @@ Project Structure
 
 
 
-   Run : (Using Node.js) 
+   Run : (Using Node.js) :
    npx serve .
    
 
