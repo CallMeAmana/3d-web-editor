@@ -296,10 +296,12 @@
                 
                 // Initialize plugin manager
                 pluginManager = new PluginManager(eventBus, editorCore);
+                editorCore.pluginManager = pluginManager;
                 updateLoadingProgress(70, 'Setting up user interface...');
                 
                 // Initialize UI manager
                 uiManager = new UIManager(eventBus, editorCore);
+                editorCore.uiManager = uiManager;
                 updateLoadingProgress(80, 'Finalizing setup...');
                 
                 // Setup global references
