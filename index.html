@@ -190,6 +190,18 @@
                 const editorCore = new EditorCore(eventBus, sceneManager, componentSystem, assetManager);
                 EditorCore.setInstance(editorCore);
                 
+                updateLoadingProgress(60, 'Loading plugins...');
+                
+                // Initialize plugin manager
+                pluginManager = new PluginManager(eventBus, editorCore);
+                editorCore.pluginManager = pluginManager;
+                updateLoadingProgress(70, 'Setting up user interface...');
+                
+                // Initialize UI manager
+                uiManager = new UIManager(eventBus, editorCore);
+                editorCore.uiManager = uiManager;
+                updateLoadingProgress(80, 'Finalizing setup...');
+                
                 // Initialize editor (this will also initialize UI)
                 await editorCore.init();
                 

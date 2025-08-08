@@ -1,0 +1,22 @@
+{
+  "name": "3d-web-editor",
+  "version": "1.0.0",
+  "description": "A powerful, extensible 3D web application editor built with pure JavaScript and Three.js",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve .",
+    "serve": "npx serve ."
+  },
+  "keywords": [
+    "3d",
+    "editor",
+    "threejs",
+    "webgl",
+    "javascript"
+  ],
+  "author": "3D Web Editor Team",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
