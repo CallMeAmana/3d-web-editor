@@ -50,7 +50,8 @@ class UIManager {
             this.clearInspector();
         });
         
-        this.eventBus.on(EventBus.Events.OBJECT_CREATED, () => {
+        this.eventBus.on(EventBus.Events.OBJECT_CREATED, (data) => {
+            console.log('Object created event received:', data);
             this.updateHierarchy();
         });
         
@@ -725,8 +726,13 @@ class UIManager {
      * Update hierarchy tree
      */
     updateHierarchy() {
-        const hierarchyTree = document.getElementById('hierarchy-tree');
-        if (!hierarchyTree) return;
+        const hierarchyTree = document.getElementById('hierarchy-list');
+        if (!hierarchyTree) {
+            console.warn('Hierarchy list element not found');
+            return;
+        }
+        
+        console.log('Updating hierarchy with objects:', this.editorCore.sceneManager.objects.size);
         
         let html = `
             <div class="tree-item" data-object-id="scene">
@@ -740,9 +746,10 @@ class UIManager {
         objects.forEach(object => {
             const isSelected = this.editorCore.sceneManager.selectedObjects.has(object.id);
             html += `
-                <div class="tree-item ${isSelected ? 'selected' : ''}" data-object-id="${object.id}" onclick="uiManager.selectObjectFromHierarchy('${object.id}')">
+                <div class="tree-item ${isSelected ? 'selected' : ''}" data-object-id="${object.id}">
                     <span class="tree-icon">${this.getObjectIcon(object.type)}</span>
-                    <span class="tree-label">${object.name}</span>
+                    <span class="tree-label" onclick="uiManager.selectObjectFromHierarchy('${object.id}')">${object.name}</span>
+                    <button class="delete-btn" onclick="uiManager.deleteObject('${object.id}')" title="Delete Object">🗑</button>
                 </div>
             `;
         });
@@ -772,11 +779,19 @@ class UIManager {
     selectObjectFromHierarchy(objectId) {
         this.editorCore.sceneManager.selectObject(objectId);
     }
+    
+    deleteObject(objectId) {
+        if (confirm('Are you sure you want to delete this object?')) {
+            this.editorCore.sceneManager.removeObject(objectId);
+        }
+    }
 
     /**
-     * Update scene controls
+     * Update scene controls and UI state based on play mode
      */
     updateSceneControls(mode) {
+        console.log(`updateSceneControls called with mode: ${mode}`);
+        
         const playBtn = document.getElementById('play-scene');
         const pauseBtn = document.getElementById('pause-scene');
         const stopBtn = document.getElementById('stop-scene');
@@ -791,13 +806,118 @@ class UIManager {
             switch (mode) {
                 case 'play':
                     playBtn.classList.add('active');
+                    this.setPlayModeUI(true);
                     break;
                 case 'pause':
                     pauseBtn.classList.add('active');
+                    this.setPlayModeUI(true);
                     break;
                 case 'stop':
                     stopBtn.classList.add('active');
+                    this.setPlayModeUI(false);
                     break;
+            }
+        } else {
+            console.warn('Scene control buttons not found');
+        }
+    }
+
+    /**
+     * Set UI state for play mode (disable editing panels)
+     */
+    setPlayModeUI(isPlayMode) {
+        console.log(`setPlayModeUI called with isPlayMode: ${isPlayMode}`);
+        
+        // Get all panels that should be disabled during play mode
+        const inspectorPanel = document.getElementById('inspector-panel');
+        const hierarchyPanel = document.getElementById('hierarchy-panel');
+        const toolbarPanel = document.getElementById('main-toolbar');
+        const componentPanel = document.getElementById('component-panel');
+        
+        console.log('Found panels:', {
+            inspectorPanel: !!inspectorPanel,
+            hierarchyPanel: !!hierarchyPanel,
+            toolbarPanel: !!toolbarPanel,
+            componentPanel: !!componentPanel
+        });
+        
+        // Add/remove disabled class and disable interactions
+        const panelsToDisable = [inspectorPanel, hierarchyPanel, toolbarPanel, componentPanel];
+        
+        panelsToDisable.forEach(panel => {
+            if (panel) {
+                if (isPlayMode) {
+                    console.log(`Disabling panel: ${panel.id || panel.className}`);
+                    panel.classList.add('play-mode-disabled');
+                    panel.style.pointerEvents = 'none';
+                    panel.style.opacity = '0.6';
+                    
+                    // Disable all input elements within the panel, except scene control buttons
+                    const inputs = panel.querySelectorAll('input, select, textarea, button');
+                    inputs.forEach(input => {
+                        // Don't disable scene control buttons
+                        if (!input.id || !['play-scene', 'pause-scene', 'stop-scene'].includes(input.id)) {
+                            input.disabled = true;
+                            console.log(`Disabled input element:`, input);
+                        }
+                    });
+                    
+                    console.log(`Panel ${panel.id} disabled successfully`);
+                } else {
+                    console.log(`Enabling panel: ${panel.id || panel.className}`);
+                    panel.classList.remove('play-mode-disabled');
+                    panel.style.pointerEvents = 'auto';
+                    panel.style.opacity = '1';
+                    
+                    // Re-enable all input elements within the panel
+                    const inputs = panel.querySelectorAll('input, select, textarea, button');
+                    inputs.forEach(input => {
+                        input.disabled = false;
+                        console.log(`Enabled input element:`, input);
+                    });
+                    
+                    console.log(`Panel ${panel.id} enabled successfully`);
+                }
+            } else {
+                console.warn(`Panel not found: ${panel}`);
+            }
+        });
+        
+        // Show/hide play mode indicator
+        this.showPlayModeIndicator(isPlayMode);
+    }
+
+    /**
+     * Show or hide play mode indicator
+     */
+    showPlayModeIndicator(isPlayMode) {
+        let indicator = document.getElementById('play-mode-indicator');
+        
+        if (isPlayMode) {
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'play-mode-indicator';
+                indicator.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 10px;
+                        right: 10px;
+                        background: #ff4444;
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        z-index: 1000;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                    ">
+                        PLAY MODE
+                    </div>
+                `;
+                document.body.appendChild(indicator);
+            }
+        } else {
+            if (indicator) {
+                indicator.remove();
             }
         }
     }

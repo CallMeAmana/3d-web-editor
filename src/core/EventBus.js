@@ -217,60 +217,6 @@ class EventBus {
 
 // Standard event types used throughout the editor
 EventBus.Events = {
-    // Scene events
-    SCENE_LOADED: 'scene:loaded',
-    SCENE_SAVED: 'scene:saved',
-    SCENE_CLEARED: 'scene:cleared',
-    SCENE_CHANGED: 'scene:changed',
-
-    // Object events
-    OBJECT_CREATED: 'object:created',
-    OBJECT_DELETED: 'object:deleted',
-    OBJECT_SELECTED: 'object:selected',
-    OBJECT_DESELECTED: 'object:deselected',
-    OBJECT_TRANSFORMED: 'object:transformed',
-    OBJECT_PROPERTY_CHANGED: 'object:property_changed',
-
-    // Component events
-    COMPONENT_ADDED: 'component:added',
-    COMPONENT_REMOVED: 'component:removed',
-    COMPONENT_UPDATED: 'component:updated',
-
-    // Tool events
-    TOOL_ACTIVATED: 'tool:activated',
-    TOOL_DEACTIVATED: 'tool:deactivated',
-
-    // Asset events
-    ASSET_LOADED: 'asset:loaded',
-    ASSET_IMPORTED: 'asset:imported',
-    ASSET_DELETED: 'asset:deleted',
-
-    // Plugin events
-    PLUGIN_LOADED: 'plugin:loaded',
-    PLUGIN_UNLOADED: 'plugin:unloaded',
-    PLUGIN_ERROR: 'plugin:error',
-
-    // UI events
-    UI_PANEL_TOGGLED: 'ui:panel_toggled',
-    UI_LAYOUT_CHANGED: 'ui:layout_changed',
-    UI_THEME_CHANGED: 'ui:theme_changed',
-
-    // Editor events
-    EDITOR_READY: 'editor:ready',
-    EDITOR_MODE_CHANGED: 'editor:mode_changed',
-    EDITOR_COMMAND_EXECUTED: 'editor:command_executed',
-
-    // Camera events
-    CAMERA_MOVED: 'camera:moved',
-    CAMERA_RESET: 'camera:reset',
-
-    // Viewport events
-    VIEWPORT_RESIZED: 'viewport:resized',
-    VIEWPORT_MODE_CHANGED: 'viewport:mode_changed'
-};
-
-// Define event types
-EventBus.Events = {
     // Editor events
     EDITOR_READY: 'editor:ready',
     EDITOR_COMMAND_EXECUTED: 'editor:command:executed',
@@ -282,6 +228,8 @@ EventBus.Events = {
     SCENE_STOP: 'scene:stop',
     SCENE_CLEARED: 'scene:cleared',
     SCENE_IMPORTED: 'scene:imported',
+    SCENE_LOADED: 'scene:loaded',
+    SCENE_SAVED: 'scene:saved',
     
     // Object events
     OBJECT_CREATED: 'object:created',
@@ -289,6 +237,7 @@ EventBus.Events = {
     OBJECT_SELECTED: 'object:selected',
     OBJECT_DESELECTED: 'object:deselected',
     OBJECT_TRANSFORMED: 'object:transformed',
+    OBJECT_PROPERTY_CHANGED: 'object:property_changed',
     
     // Component events
     COMPONENT_ADDED: 'component:added',
@@ -316,7 +265,9 @@ EventBus.Events = {
     PLUGIN_ERROR: 'plugin:error',
     
     // UI events
-    UI_PANEL_TOGGLED: 'ui:panel:toggled'
+    UI_PANEL_TOGGLED: 'ui:panel_toggled',
+    UI_LAYOUT_CHANGED: 'ui:layout_changed',
+    UI_THEME_CHANGED: 'ui:theme_changed'
 };
 
 // Export for use in other modules

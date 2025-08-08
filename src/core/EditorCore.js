@@ -50,6 +50,10 @@ class EditorCore {
             }
         };
         
+        // Set singleton instance for ComponentSystem
+        if (this.componentSystem) {
+            ComponentSystem.setInstance(this.componentSystem);
+        }
         // Don't auto-initialize, wait for explicit init call
     }
 
@@ -67,6 +71,9 @@ class EditorCore {
             
             // Setup event listeners
             this.setupEventListeners();
+            
+            // Initialize UI systems
+            await this.initializeUI();
             
             // Setup auto-save
             this.setupAutoSave();
@@ -493,7 +500,7 @@ class EditorCore {
             const projectData = {
                 project: this.project,
                 scene: this.sceneManager.exportScene(),
-                plugins: this.pluginManager.getLoadedPlugins(),
+                plugins: this.pluginManager? this.pluginManager.getLoadedPlugins() : [],
                 settings: this.settings
             };
             
@@ -690,14 +697,22 @@ class EditorCore {
             return;
         }
         
+        const wasPaused = this.editorMode === 'pause';
         this.editorMode = 'play';
         
-        // Initialize all script components
+        console.log(`PlayScene called - wasPaused: ${wasPaused}, new mode: ${this.editorMode}`);
+        
+        // Initialize or resume script components
         if (this.componentSystem) {
-            this.componentSystem.startScriptExecution();
+            if (wasPaused) {
+                this.componentSystem.resumeScriptExecution();
+            } else {
+                this.componentSystem.startScriptExecution();
+            }
         }
         
         this.eventBus.emit(EventBus.Events.SCENE_PLAY, { timestamp: Date.now() });
+        console.log('SCENE_PLAY event emitted');
         this.showMessage('Scene playing - scripts are now active', 'success');
         
         // Update button states
@@ -714,11 +729,15 @@ class EditorCore {
         }
         
         this.editorMode = 'pause';
+        console.log(`PauseScene called - new mode: ${this.editorMode}`);
         
         // Pause script execution
-        // Scripts will check editorMode in their update method
+        if (this.componentSystem) {
+            this.componentSystem.pauseScriptExecution();
+        }
         
         this.eventBus.emit(EventBus.Events.SCENE_PAUSE, { timestamp: Date.now() });
+        console.log('SCENE_PAUSE event emitted');
         this.showMessage('Scene paused', 'info');
         
         // Update button states
@@ -732,6 +751,7 @@ class EditorCore {
         const wasPlaying = this.editorMode === 'play' || this.editorMode === 'pause';
         
         this.editorMode = 'edit';
+        console.log(`StopScene called - wasPlaying: ${wasPlaying}, new mode: ${this.editorMode}`);
         
         // Stop and reset all script components
         if (this.componentSystem && wasPlaying) {
@@ -739,7 +759,13 @@ class EditorCore {
             this.componentSystem.resetScriptExecution();
         }
         
+        // Reset all object positions to their initial state
+        if (this.sceneManager && wasPlaying) {
+            this.sceneManager.resetObjectPositions();
+        }
+        
         this.eventBus.emit(EventBus.Events.SCENE_STOP, { timestamp: Date.now() });
+        console.log('SCENE_STOP event emitted');
         this.showMessage('Scene stopped - back to edit mode', 'info');
         
         // Update button states

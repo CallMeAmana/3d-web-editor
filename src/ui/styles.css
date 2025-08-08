@@ -204,9 +204,6 @@ body {
     cursor: pointer;
     transition: var(--transition);
     -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
@@ -349,6 +346,25 @@ body {
     text-align: center;
 }
 
+/* New vertical inputs style for transform panel */
+.vertical-inputs {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+
+.vertical-inputs label {
+    min-width: auto !important;
+    margin-bottom: 4px;
+}
+
+.vertical-inputs input,
+.vertical-inputs select,
+.vertical-inputs textarea {
+    width: 100% !important;
+    text-align: left !important;
+    margin-bottom: 8px;
+}
+
 /* Buttons */
 button {
     background: var(--bg-tertiary);
@@ -423,6 +439,29 @@ button.error {
 .tree-label {
     font-size: 12px;
     flex: 1;
+    cursor: pointer;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--radius);
+    font-size: 10px;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.delete-btn:hover {
+    color: var(--accent-error);
+    background: var(--bg-quaternary);
+    opacity: 1;
+}
+
+.tree-item:hover .delete-btn {
+    opacity: 1;
 }
 
 /* Asset browser */
@@ -562,6 +601,7 @@ button.error {
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
@@ -810,6 +850,7 @@ button.error {
         opacity: 0;
         transform: scale(0.9);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -821,6 +862,7 @@ button.error {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -828,9 +870,12 @@ button.error {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -841,12 +886,50 @@ button.error {
     animation: pulse 1.5s infinite;
 }
 
+/* Play mode disabled state */
+.play-mode-disabled {
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+    position: relative;
+}
+
+.play-mode-disabled::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.play-mode-disabled * {
+    pointer-events: none !important;
+}
+
+/* Play mode indicator */
+#play-mode-indicator {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: #ff4444;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    animation: pulse 2s infinite;
+}
+
 /* Responsive design */
 @media (max-width: 1024px) {
     .sidebar {
         width: 250px;
     }
-    
+
     .modal-content {
         width: 95%;
     }
@@ -856,18 +939,18 @@ button.error {
     .sidebar {
         width: 200px;
     }
-    
+
     .tool-btn {
         padding: 6px 8px;
         font-size: 11px;
     }
-    
+
     .property-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 4px;
     }
-    
+
     .property-row label {
         min-width: auto;
     }
@@ -937,4 +1020,3 @@ button.error {
 .p-16 {
     padding: 16px;
 }
-

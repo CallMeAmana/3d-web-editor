@@ -17,6 +17,9 @@ class SceneManager {
         this.selectedObjects = new Set();
         this.nextObjectId = 1;
         
+        // Store initial positions for reset functionality
+        this.initialPositions = new Map(); // Map of object ID to initial position data
+        
         // Helpers and tools
         this.gridHelper = null;
         this.axesHelper = null;
@@ -636,6 +639,13 @@ class SceneManager {
             }
         };
         
+        // Store initial position for reset functionality
+        this.initialPositions.set(id, {
+            position: mesh.position.clone(),
+            rotation: mesh.rotation.clone(),
+            scale: mesh.scale.clone()
+        });
+        
         // Add to scene and tracking
         this.scene.add(mesh);
         this.objects.set(id, object);
@@ -1100,6 +1110,37 @@ class SceneManager {
         }
         
         this.eventBus.emit(EventBus.Events.SCENE_IMPORTED, { sceneData });
+    }
+
+    /**
+     * Reset all objects to their initial positions
+     */
+    resetObjectPositions() {
+        console.log('Resetting all object positions to initial state...');
+        
+        this.objects.forEach((object, id) => {
+            const initialData = this.initialPositions.get(id);
+            if (initialData && object.mesh) {
+                // Reset position
+                object.mesh.position.copy(initialData.position);
+                object.properties.position.copy(initialData.position);
+                
+                // Reset rotation
+                object.mesh.rotation.copy(initialData.rotation);
+                object.properties.rotation.copy(initialData.rotation);
+                
+                // Reset scale
+                object.mesh.scale.copy(initialData.scale);
+                object.properties.scale.copy(initialData.scale);
+                
+                console.log(`Reset object ${id} to initial position:`, initialData.position);
+            }
+        });
+        
+        // Update transform controls if active
+        if (this.transformControls && this.transformControls.object) {
+            this.transformControls.update();
+        }
     }
 
     /**

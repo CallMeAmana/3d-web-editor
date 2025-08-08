@@ -72,6 +72,10 @@ class ComponentSystem {
                         with(context) {
                             ${this.scriptCode}
                         }
+                        // Extract functions from the global scope and assign them to context
+                        if (typeof start === 'function') context.start = start;
+                        if (typeof update === 'function') context.update = update;
+                        if (typeof onDestroy === 'function') context.onDestroy = onDestroy;
                     `);
                     
                     // Create script instance
@@ -86,10 +90,18 @@ class ComponentSystem {
                     // Execute the script to define methods
                     scriptFunction.call(this.scriptInstance, context);
                     
-                    // Call start method if it exists
-                    if (typeof this.scriptInstance.start === 'function') {
-                        this.scriptInstance.start();
+                    // Extract functions from context
+                    if (typeof context.start === 'function') {
+                        this.scriptInstance.start = context.start;
                     }
+                    if (typeof context.update === 'function') {
+                        this.scriptInstance.update = context.update;
+                    }
+                    if (typeof context.onDestroy === 'function') {
+                        this.scriptInstance.onDestroy = context.onDestroy;
+                    }
+                    
+                    console.log(`Script compiled successfully for entity ${this.entity}`);
                     
                 } catch (error) {
                     console.error(`Error compiling script for entity ${this.entity}:`, error);
@@ -162,11 +174,19 @@ class ComponentSystem {
                     Math: Math,
                     Vector3: THREE.Vector3,
                     
-                    // Time
+                    // Time - will be updated in update loop
                     time: {
-                        deltaTime: 0.016, // Will be updated in update loop
+                        deltaTime: 0.016,
                         time: 0,
-                        timeScale: 1
+                        timeScale: 1,
+                        getTime: () => {
+                            const componentSystem = ComponentSystem.getInstance();
+                            if (componentSystem) {
+                                return componentSystem.scriptStartTime ? 
+                                    (performance.now() - componentSystem.scriptStartTime - componentSystem.totalPausedTime) / 1000 : 0;
+                            }
+                            return 0;
+                        }
                     },
                     
                     // Input (basic)
@@ -188,31 +208,50 @@ class ComponentSystem {
             }
             
             update(deltaTime) {
-                if (!this.enabled || !this.scriptInstance) return;
+                if (!this.enabled || !this.scriptInstance) {
+                    console.log(`Script update skipped - enabled: ${this.enabled}, hasInstance: ${!!this.scriptInstance}`);
+                    return;
+                }
                 
                 // Only update if scene is in play mode
                 const editor = EditorCore.getInstance();
-                if (editor.editorMode !== 'play') return;
+                if (editor.editorMode !== 'play') {
+                    console.log(`Script update skipped - editor mode: ${editor.editorMode}`);
+                    return;
+                }
+                
+                console.log(`Script update called for entity ${this.entity}, deltaTime: ${deltaTime}`);
                 
                 // Update time in context
                 if (this.scriptInstance.context) {
                     this.scriptInstance.context.time.deltaTime = deltaTime;
-                    this.scriptInstance.context.time.time += deltaTime * this.scriptInstance.context.time.timeScale;
+                    this.scriptInstance.context.time.time = this.scriptInstance.context.time.getTime();
                     
                     // Update gameObject reference in case it changed
-                    const editor = EditorCore.getInstance();
                     const currentObject = editor.sceneManager.objects.get(this.entity);
-                    this.scriptInstance.context.gameObject = currentObject;
-                    this.scriptInstance.context.this.gameObject = currentObject;
+                    if (currentObject) {
+                        this.scriptInstance.context.gameObject = currentObject;
+                        this.scriptInstance.context.this.gameObject = currentObject;
+                        console.log(`Updated gameObject reference for entity ${this.entity}:`, currentObject);
+                        console.log(`Object mesh position:`, currentObject.mesh.position);
+                        console.log(`Object mesh rotation:`, currentObject.mesh.rotation);
+                    } else {
+                        console.warn(`Script update: Could not find object for entity ${this.entity}`);
+                        return;
+                    }
                 }
                 
                 // Call update method if it exists
                 if (typeof this.scriptInstance.update === 'function') {
                     try {
+                        console.log(`Calling update() method for entity ${this.entity}`);
                         this.scriptInstance.update();
+                        console.log(`Update() method completed for entity ${this.entity}`);
                     } catch (error) {
                         console.error(`Error in script update for entity ${this.entity}:`, error);
                     }
+                } else {
+                    console.warn(`Script for entity ${this.entity} has no update() method`);
                 }
             }
             
@@ -468,18 +507,27 @@ class ComponentSystem {
             }
             
             function update() {
-                // Direct mesh rotation since Transform component is removed
-                var sceneObject = findObject(entity);
-                if (sceneObject && sceneObject.mesh) {
+                // Get the current object
+                var obj = gameObject;
+                if (obj && obj.mesh) {
+                    var rotationAmount = rotationSpeed * time.deltaTime;
+                    
+                    // Handle both single meshes and imported model groups
+                    var targetMesh = obj.mesh;
+                    if (obj.type === 'imported-model') {
+                        // For imported models, rotate the entire group
+                        targetMesh = obj.mesh;
+                    }
+                    
                     switch(axis) {
                         case 'x':
-                            sceneObject.mesh.rotation.x += rotationSpeed * time.deltaTime;
+                            targetMesh.rotation.x += rotationAmount;
                             break;
                         case 'y':
-                            sceneObject.mesh.rotation.y += rotationSpeed * time.deltaTime;
+                            targetMesh.rotation.y += rotationAmount;
                             break;
                         case 'z':
-                            sceneObject.mesh.rotation.z += rotationSpeed * time.deltaTime;
+                            targetMesh.rotation.z += rotationAmount;
                             break;
                     }
                 }
@@ -495,13 +543,20 @@ class ComponentSystem {
             var startPosition = null;
             
             function start() {
-                // Get initial position from mesh since Transform component is removed
-                var sceneObject = findObject(entity);
-                if (sceneObject && sceneObject.mesh) {
+                // Get initial position from mesh
+                var obj = gameObject;
+                if (obj && obj.mesh) {
+                    // Handle both single meshes and imported model groups
+                    var targetMesh = obj.mesh;
+                    if (obj.type === 'imported-model') {
+                        // For imported models, use the entire group
+                        targetMesh = obj.mesh;
+                    }
+                    
                     startPosition = {
-                        x: sceneObject.mesh.position.x,
-                        y: sceneObject.mesh.position.y,
-                        z: sceneObject.mesh.position.z
+                        x: targetMesh.position.x,
+                        y: targetMesh.position.y,
+                        z: targetMesh.position.z
                     };
                 }
                 log('Oscillator script started for entity: ' + entity);
@@ -510,19 +565,26 @@ class ComponentSystem {
             function update() {
                 if (!startPosition) return;
                 
-                var sceneObject = findObject(entity);
-                if (sceneObject && sceneObject.mesh) {
+                var obj = gameObject;
+                if (obj && obj.mesh) {
                     var offset = Math.sin(time.time * frequency) * amplitude;
+                    
+                    // Handle both single meshes and imported model groups
+                    var targetMesh = obj.mesh;
+                    if (obj.type === 'imported-model') {
+                        // For imported models, move the entire group
+                        targetMesh = obj.mesh;
+                    }
                     
                     switch(axis) {
                         case 'x':
-                            sceneObject.mesh.position.x = startPosition.x + offset;
+                            targetMesh.position.x = startPosition.x + offset;
                             break;
                         case 'y':
-                            sceneObject.mesh.position.y = startPosition.y + offset;
+                            targetMesh.position.y = startPosition.y + offset;
                             break;
                         case 'z':
-                            sceneObject.mesh.position.z = startPosition.z + offset;
+                            targetMesh.position.z = startPosition.z + offset;
                             break;
                     }
                 }
@@ -537,7 +599,7 @@ class ComponentSystem {
             
             function start() {
                 // Listen for object selection events
-                on(EventBus.Events.OBJECT_SELECTED, function(data) {
+                on('objectSelected', function(data) {
                     if (data.id === entity) {
                         handleClick();
                     }
@@ -552,18 +614,24 @@ class ComponentSystem {
                         log(message);
                         break;
                     case 'hide':
-                        var sceneObject = findObject(entity);
-                        if (sceneObject && sceneObject.mesh) {
-                            sceneObject.mesh.visible = false;
+                        var obj = gameObject;
+                        if (obj && obj.mesh) {
+                            // Handle both single meshes and imported model groups
+                            var targetMesh = obj.mesh;
+                            if (obj.type === 'imported-model') {
+                                // For imported models, hide the entire group
+                                targetMesh = obj.mesh;
+                            }
+                            targetMesh.visible = false;
                         }
                         break;
                     case 'destroy':
                         destroyObject(entity);
                         break;
                     case 'changeColor':
-                        var sceneObject = findObject(entity);
-                        if (sceneObject && sceneObject.mesh && sceneObject.mesh.material) {
-                            sceneObject.mesh.material.color.setHex(Math.random() * 0xffffff);
+                        var obj = gameObject;
+                        if (obj && obj.mesh && obj.mesh.material) {
+                            obj.mesh.material.color.setHex(Math.random() * 0xffffff);
                         }
                         break;
                 }
@@ -572,26 +640,70 @@ class ComponentSystem {
 
         // Simple Rotate Script
         this.registerScriptTemplate('Simple Rotate', `
-// Simple Rotate Script
-// Makes the object rotate around its Y axis
+            // Simple Rotate Script
+            // Makes the object rotate around its Y axis
+            
+            var rotationSpeed = 1.0; // degrees per second
+            
+            function start() {
+                log('Simple rotate script started');
+            }
+            
+            function update() {
+                var obj = gameObject;
+                if (obj && obj.mesh) {
+                    // Rotate around Y axis
+                    obj.mesh.rotation.y += (rotationSpeed * Math.PI / 180) * time.deltaTime;
+                }
+            }
+            
+            function onDestroy() {
+                log('Simple rotate script destroyed');
+            }
+        `);
 
-var rotationSpeed = 1.0; // degrees per second
-
-function start() {
-    console.log('Simple rotate script started');
-}
-
-function update() {
-    var obj = gameObject;
-    if (obj && obj.mesh) {
-        // Rotate around Y axis
-        obj.mesh.rotation.y += (rotationSpeed * Math.PI / 180) * time.deltaTime;
-    }
-}
-
-function onDestroy() {
-    console.log('Simple rotate script destroyed');
-}
+        // Debug script for testing
+        this.registerScriptTemplate('Debug Test', `
+            // Debug Test Script - Simple test to verify script system is working
+            var testCounter = 0;
+            
+            function start() {
+                log('Debug test script started for entity: ' + entity);
+                log('GameObject type: ' + (gameObject ? gameObject.type : 'undefined'));
+                log('GameObject mesh: ' + (gameObject && gameObject.mesh ? 'exists' : 'undefined'));
+                if (gameObject && gameObject.mesh) {
+                    log('Mesh position: ' + JSON.stringify(gameObject.mesh.position));
+                    log('Mesh rotation: ' + JSON.stringify(gameObject.mesh.rotation));
+                    if (gameObject.type === 'imported-model') {
+                        log('Imported model detected - mesh is a group with ' + gameObject.mesh.children.length + ' children');
+                    }
+                }
+            }
+            
+            function update() {
+                testCounter += time.deltaTime;
+                
+                if (testCounter >= 1.0) { // Log every second
+                    log('Debug test update - Counter: ' + testCounter.toFixed(2));
+                    testCounter = 0;
+                }
+                
+                // Simple rotation test
+                var obj = gameObject;
+                if (obj && obj.mesh) {
+                    // Handle both single meshes and imported model groups
+                    var targetMesh = obj.mesh;
+                    if (obj.type === 'imported-model') {
+                        // For imported models, rotate the entire group
+                        targetMesh = obj.mesh;
+                    }
+                    targetMesh.rotation.y += 0.01;
+                }
+            }
+            
+            function onDestroy() {
+                log('Debug test script destroyed');
+            }
         `);
 
         console.log('Built-in script templates registered');
@@ -645,6 +757,7 @@ function onDestroy() {
     startUpdateLoop() {
         this.isUpdating = true;
         let lastTime = performance.now();
+        let frameCount = 0;
         
         const update = () => {
             if (!this.isUpdating) return;
@@ -653,11 +766,17 @@ function onDestroy() {
             const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
             lastTime = currentTime;
             
+            frameCount++;
+            if (frameCount % 60 === 0) { // Log every 60 frames (about once per second)
+                console.log(`Update loop running - frame: ${frameCount}, deltaTime: ${deltaTime.toFixed(4)}`);
+            }
+            
             this.updateComponents(deltaTime);
             
             requestAnimationFrame(update);
         };
         
+        console.log('Starting component update loop');
         update();
     }
 
@@ -676,33 +795,54 @@ function onDestroy() {
         const editor = EditorCore.getInstance();
         if (!editor) return;
         
-        // Update script time tracking
+        // Debug: Log the current editor mode
         if (editor.editorMode === 'play') {
-            // Scripts are running
-        } else if (editor.editorMode === 'pause') {
-            // Scripts are paused - don't update script components
-            return;
-        } else {
-            // Scripts are stopped - don't update script components
-            return;
+            console.log('Play mode detected, updating scripts...');
         }
         
-        this.entityComponents.forEach((components, entityId) => {
-            components.forEach((component, componentName) => {
-                if (typeof component.update === 'function') {
-                    component.update(deltaTime);
-                }
+        // Update script time tracking
+        if (editor.editorMode === 'play') {
+            // Scripts are running - update all components including scripts
+            this.entityComponents.forEach((components, entityId) => {
+                components.forEach((component, componentName) => {
+                    if (typeof component.update === 'function') {
+                        if (componentName === 'Script') {
+                            console.log(`Updating script for entity: ${entityId}`);
+                        }
+                        component.update(deltaTime);
+                    }
+                });
             });
-        });
+        } else if (editor.editorMode === 'pause') {
+            // Scripts are paused - don't update script components but update others
+            this.entityComponents.forEach((components, entityId) => {
+                components.forEach((component, componentName) => {
+                    if (componentName !== 'Script' && typeof component.update === 'function') {
+                        component.update(deltaTime);
+                    }
+                });
+            });
+        } else {
+            // Scripts are stopped - don't update script components but update others
+            this.entityComponents.forEach((components, entityId) => {
+                components.forEach((component, componentName) => {
+                    if (componentName !== 'Script' && typeof component.update === 'function') {
+                        component.update(deltaTime);
+                    }
+                });
+            });
+        }
     }
 
     /**
      * Start script execution (called when play button is pressed)
      */
     startScriptExecution() {
-        console.log('Starting script execution...');
+        console.log('Starting script execution system...');
         this.scriptStartTime = performance.now();
         this.totalPausedTime = 0;
+        
+        let scriptCount = 0;
         
         // Call start() method on all script components
         this.entityComponents.forEach((components, entityId) => {
@@ -719,19 +859,24 @@ function onDestroy() {
                     try {
                         scriptComponent.scriptInstance.start();
                         console.log(`Started script for entity: ${entityId}`);
+                        scriptCount++;
                     } catch (error) {
                         console.error(`Error starting script for entity ${entityId}:`, error);
                     }
+                } else {
+                    console.warn(`Script for entity ${entityId} has no start() method`);
                 }
             }
         });
+        
+        console.log(`Script execution started. ${scriptCount} scripts initialized.`);
     }
     
     /**
      * Stop script execution (called when stop button is pressed)
      */
     stopScriptExecution() {
-        console.log('Stopping script execution...');
+        console.log('Stopping script execution system...');
         
         // Call onDestroy() method on all script components
         this.entityComponents.forEach((components, entityId) => {
@@ -750,10 +895,29 @@ function onDestroy() {
     }
     
     /**
+     * Pause script execution (called when pause button is pressed)
+     */
+    pauseScriptExecution() {
+        console.log('Pausing script execution system...');
+        this.scriptPauseTime = performance.now();
+    }
+    
+    /**
+     * Resume script execution (called when play button is pressed after pause)
+     */
+    resumeScriptExecution() {
+        console.log('Resuming script execution system...');
+        if (this.scriptPauseTime > 0) {
+            this.totalPausedTime += performance.now() - this.scriptPauseTime;
+            this.scriptPauseTime = 0;
+        }
+    }
+    
+    /**
      * Reset script execution state
      */
     resetScriptExecution() {
-        console.log('Resetting script execution state...');
+        console.log('Resetting script execution system state...');
         this.scriptStartTime = 0;
         this.scriptPauseTime = 0;
         this.totalPausedTime = 0;
@@ -983,6 +1147,42 @@ function onDestroy() {
                 console.error(`Failed to deserialize component ${componentName} for entity ${entityId}:`, error);
             }
         });
+    }
+
+    /**
+     * Get script execution status for debugging
+     */
+    getScriptStatus() {
+        const status = {
+            totalScripts: 0,
+            activeScripts: 0,
+            scriptDetails: []
+        };
+        
+        this.entityComponents.forEach((components, entityId) => {
+            const scriptComponent = components.get('Script');
+            if (scriptComponent) {
+                status.totalScripts++;
+                
+                const scriptInfo = {
+                    entityId: entityId,
+                    scriptName: scriptComponent.scriptName,
+                    enabled: scriptComponent.enabled,
+                    hasStart: typeof scriptComponent.scriptInstance?.start === 'function',
+                    hasUpdate: typeof scriptComponent.scriptInstance?.update === 'function',
+                    hasOnDestroy: typeof scriptComponent.scriptInstance?.onDestroy === 'function',
+                    compiled: !!scriptComponent.scriptInstance
+                };
+                
+                if (scriptComponent.enabled && scriptComponent.scriptInstance) {
+                    status.activeScripts++;
+                }
+                
+                status.scriptDetails.push(scriptInfo);
+            }
+        });
+        
+        return status;
     }
 
     /**

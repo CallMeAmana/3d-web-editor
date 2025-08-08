@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Web Editor</title>
     <link rel="stylesheet" href="src/ui/styles.css">
+    
+    <!-- Three.js Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
@@ -14,10 +16,10 @@
 <body>
     <div id="app">
         <!-- Main Toolbar -->
-        <div id="main-toolbar">
+        <div class="toolbar" id="main-toolbar">
             <div class="toolbar-group">
                 <button class="tool-btn" id="new-scene" title="New Scene">📄</button>
-                <button class="tool-btn" id="open-scene" title="Open Scene">📁</button>
+                <button class="tool-btn" id="open-scene" title="Open Scene">📂</button>
                 <button class="tool-btn" id="save-scene" title="Save Scene">💾</button>
             </div>
             
@@ -27,26 +29,25 @@
             </div>
             
             <div class="toolbar-group">
-                <button class="tool-btn" id="play-scene" title="Play Scene">▶️</button>
-                <button class="tool-btn" id="pause-scene" title="Pause Scene">⏸️</button>
-                <button class="tool-btn" id="stop-scene" title="Stop Scene">⏹️</button>
-            </div>
-            
-            <div class="toolbar-group">
-                <button class="tool-btn" id="move-tool" title="Move Tool">✋</button>
+                <button class="tool-btn" id="move-tool" title="Move Tool">↔</button>
                 <button class="tool-btn" id="rotate-tool" title="Rotate Tool">🔄</button>
-                <button class="tool-btn" id="scale-tool" title="Scale Tool">📏</button>
+                <button class="tool-btn" id="scale-tool" title="Scale Tool">⤧</button>
             </div>
             
             <div class="toolbar-group">
                 <button class="tool-btn" id="import-model" title="Import 3D Model">📁</button>
             </div>
             
-
+            <div class="toolbar-group">
+                <button class="tool-btn" id="wireframe-toggle" title="Toggle Wireframe">⊡</button>
+                <button class="tool-btn" id="grid-toggle" title="Toggle Grid">⊞</button>
+                <button class="tool-btn" id="fullscreen-toggle" title="Fullscreen">⛶</button>
+            </div>
             
             <div class="toolbar-group">
-                <button class="tool-btn" id="plugin-manager" title="Plugin Manager">🔌</button>
-                <button class="tool-btn" id="settings" title="Settings">⚙️</button>
+                <button class="tool-btn" id="play-scene" title="Play Scene">▶</button>
+                <button class="tool-btn" id="pause-scene" title="Pause Scene">⏸</button>
+                <button class="tool-btn" id="stop-scene" title="Stop Scene">⏹</button>
             </div>
         </div>
 
@@ -55,55 +56,46 @@
             <!-- Left Sidebar -->
             <div class="sidebar" id="left-sidebar">
                 <!-- Scene Hierarchy Panel -->
-                <div class="panel" id="scene-hierarchy">
+                <div class="panel" id="hierarchy-panel">
                     <div class="panel-header">
                         <h3>Scene Hierarchy</h3>
-                        <button class="panel-toggle">−</button>
                     </div>
                     <div class="panel-content">
-                        <div id="hierarchy-tree">
-                            <div class="tree-item" data-object-id="scene">
-                                <span class="tree-icon">📁</span>
-                                <span class="tree-label">Scene</span>
-                            </div>
+                        <div id="hierarchy-list">
+                            <p>No objects in scene</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Components Panel -->
-                <div class="panel" id="components">
+                <div class="panel" id="component-panel">
                     <div class="panel-header">
                         <h3>Components</h3>
-                        <button class="panel-toggle">−</button>
                     </div>
                     <div class="panel-content">
-                        <div class="component-list" id="components-list">
-                            <div class="component-item" data-component="Script" draggable="true">
+                        <div id="component-list">
+                            <div class="component-item" draggable="true" data-component="Script">
                                 <span class="component-icon">📜</span>
                                 <span class="component-name">Script</span>
                             </div>
-                            <div class="component-item" data-component="Collider" draggable="true">
-                                <span class="component-icon">🛡️</span>
+                            <div class="component-item" draggable="true" data-component="Collider">
+                                <span class="component-icon">🛡</span>
                                 <span class="component-name">Collider</span>
                             </div>
-                            <div class="component-item" data-component="Light" draggable="true">
+                            <div class="component-item" draggable="true" data-component="Light">
                                 <span class="component-icon">💡</span>
                                 <span class="component-name">Light</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-
             </div>
 
             <!-- Viewport -->
-            <div id="viewport">
+            <div class="viewport" id="viewport">
                 <div class="viewport-overlay">
-                    <div class="viewport-controls">
-                        <button class="viewport-btn" id="wireframe-toggle" title="Toggle Wireframe">🔲</button>
-                        <button class="viewport-btn" id="grid-toggle" title="Toggle Grid">⊞</button>
-                        <button class="viewport-btn" id="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
+                    <div class="viewport-info">
+                        <span id="viewport-stats">Objects: 0 | FPS: 60</span>
                     </div>
                 </div>
             </div>
@@ -111,143 +103,30 @@
             <!-- Right Sidebar -->
             <div class="sidebar" id="right-sidebar">
                 <!-- Inspector Panel -->
-                <div class="panel" id="inspector">
+                <div class="panel" id="inspector-panel">
                     <div class="panel-header">
                         <h3>Inspector</h3>
-                        <button class="panel-toggle">−</button>
                     </div>
                     <div class="panel-content">
                         <div id="inspector-content">
-                            <p>Select an object to view its properties</p>
+                            <p>Select an object to inspect</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Console Panel -->
-                <div class="panel" id="console">
+                <div class="panel" id="console-panel">
                     <div class="panel-header">
                         <h3>Console</h3>
-                        <button class="panel-toggle">−</button>
+                        <button id="clear-console" title="Clear Console">🗑</button>
                     </div>
                     <div class="panel-content">
-                        <div class="console-output" id="console-output">
-                            <div style="color: #4fc3f7;">[INFO] 3D Web Editor initialized</div>
-                            <div style="color: #66bb6a;">[SUCCESS] Core systems loaded</div>
-                            <div style="color: #4fc3f7;">[INFO] Ready for content creation</div>
-                        </div>
+                        <div id="console-output"></div>
                         <div class="console-input">
                             <input type="text" id="console-input" placeholder="Enter command...">
-                            <button id="console-submit">Run</button>
+                            <button id="console-submit">▶</button>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-
-    
-
-    <!-- Plugin Manager Modal -->
-    <div class="modal hidden" id="plugin-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Plugin Manager</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="tab-container">
-                    <div class="tab-buttons">
-                        <button class="tab-btn active" data-tab="installed">Installed</button>
-                        <button class="tab-btn" data-tab="available">Available</button>
-                        <button class="tab-btn" data-tab="development">Development</button>
-                    </div>
-                </div>
-                
-                <div class="tab-panel active" id="installed-plugins">
-                    <div id="installed-plugins-list">
-                        <p>Loading installed plugins...</p>
-                    </div>
-                </div>
-                
-                <div class="tab-panel" id="available-plugins">
-                    <div id="available-plugins-list">
-                        <p>Loading available plugins...</p>
-                    </div>
-                </div>
-                
-                <div class="tab-panel" id="development-plugins">
-                    <div class="plugin-dev-tools">
-                        <button id="create-plugin">Create Plugin</button>
-                        <button id="load-plugin">Load Plugin File</button>
-                        <button id="reload-plugins">Reload All</button>
-                    </div>
-                    <div style="margin-top: 16px;">
-                        <h4>Plugin Development</h4>
-                        <p>Create custom plugins to extend the editor's functionality. Use the built-in plugin API to add new tools, panels, and domain-specific features.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal hidden" id="settings-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Settings</h3>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="property-group">
-                    <h6>Appearance</h6>
-                    <div class="property-row">
-                        <label for="theme-select">Theme:</label>
-                        <select id="theme-select">
-                            <option value="dark">Dark</option>
-                            <option value="light">Light</option>
-                        </select>
-                    </div>
-                    <div class="property-row">
-                        <label for="grid-size">Grid Size:</label>
-                        <input type="number" id="grid-size" value="1" step="0.1" min="0.1">
-                    </div>
-                </div>
-                
-                <div class="property-group">
-                    <h6>Performance</h6>
-                    <div class="property-row">
-                        <label for="shadow-quality">Shadow Quality:</label>
-                        <select id="shadow-quality">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                    <div class="property-row">
-                        <label for="antialiasing" >Anti-aliasing:</label>
-                        <input type="checkbox" id="antialiasing" checked>
-                    </div>
-                </div>
-                
-                <div class="modal-actions">
-                    <button class="primary" id="save-settings">Save Settings</button>
-                    <button onclick="document.getElementById('settings-modal').classList.add('hidden')">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Screen -->
-    <div id="loading-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; z-index: 2000;">
-        <div style="text-align: center;">
-            <div style="font-size: 48px; margin-bottom: 16px;">🎯</div>
-            <h2>3D Web Editor</h2>
-            <p>Loading advanced 3D content creation platform...</p>
-            <div style="margin-top: 20px;">
-                <div style="width: 200px; height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden;">
-                    <div id="loading-progress" style="width: 0%; height: 100%; background: var(--accent-primary); transition: width 0.3s ease;"></div>
                 </div>
             </div>
         </div>
@@ -258,193 +137,90 @@
     <script src="src/core/SceneManager.js"></script>
     <script src="src/core/ComponentSystem.js"></script>
     <script src="src/core/AssetManager.js"></script>
-    <script src="src/core/PluginManager.js"></script>
     <script src="src/core/EditorCore.js"></script>
     <script src="src/ui/UIManager.js"></script>
     
     <!-- Main Application Script -->
     <script>
-        // Global variables
-        let editorCore;
-        let uiManager;
-        let pluginManager;
+        // Override console.log to capture output
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
         
-        // Initialize the application
-        async function initializeApp() {
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addToConsole(message, type = 'log') {
+            if (consoleOutput) {
+                const timestamp = new Date().toLocaleTimeString();
+                const color = type === 'error' ? '#ff0000' : type === 'warn' ? '#ffff00' : '#00ff00';
+                const div = document.createElement('div');
+                div.innerHTML = `<span style="color: #888888;">[${timestamp}]</span> <span style="color: ${color};">${message}</span>`;
+                consoleOutput.appendChild(div);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+        
+        // Initialize editor
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
-                updateLoadingProgress(10, 'Initializing core systems...');
+                console.log('Initializing 3D Web Editor...');
                 
-                // Initialize core systems
+                // Create core systems
                 const eventBus = new EventBus();
-                updateLoadingProgress(20, 'Setting up scene manager...');
-                
                 const sceneManager = new SceneManager(eventBus);
-                updateLoadingProgress(30, 'Loading component system...');
-                
                 const componentSystem = new ComponentSystem(eventBus);
-                ComponentSystem.setInstance(componentSystem);
-                updateLoadingProgress(40, 'Initializing asset manager...');
-                
                 const assetManager = new AssetManager(eventBus);
-                updateLoadingProgress(50, 'Setting up plugin system...');
                 
-                // Initialize editor core
-                editorCore = new EditorCore(eventBus, sceneManager, componentSystem, assetManager);
-                console.log('EditorCore instance created:', editorCore);
+                // Create editor core
+                const editorCore = new EditorCore(eventBus, sceneManager, componentSystem, assetManager);
                 EditorCore.setInstance(editorCore);
-                updateLoadingProgress(60, 'Loading plugins...');
                 
-                // Initialize plugin manager
-                pluginManager = new PluginManager(eventBus, editorCore);
-                updateLoadingProgress(70, 'Setting up user interface...');
-                
-                // Initialize UI manager
-                uiManager = new UIManager(eventBus, editorCore);
-                updateLoadingProgress(80, 'Finalizing setup...');
-                
-                // Setup global references
-                window.editorCore = editorCore;
-                window.uiManager = uiManager;
-                window.pluginManager = pluginManager;
-                
-                // Initialize the editor
+                // Initialize editor (this will also initialize UI)
                 await editorCore.init();
-                console.log('EditorCore initialized');
-                updateLoadingProgress(90, 'Loading default plugins...');
                 
-                // Load some default plugins
-                try {
-                    await pluginManager.loadPlugin('transform-tools');
-                    await pluginManager.loadPlugin('material-editor');
-                    await pluginManager.loadPlugin('lighting-tools');
-                } catch (error) {
-                    console.warn('Some plugins failed to load:', error);
-                }
+                console.log('Editor initialization complete');
                 
-                updateLoadingProgress(100, 'Ready!');
+                // Setup global references for UI functions
+                window.uiManager = editorCore.uiManager;
                 
-                // Hide loading screen
-                setTimeout(() => {
-                    document.getElementById('loading-screen').style.display = 'none';
-                    editorCore.showMessage('3D Web Editor ready for content creation!', 'success');
-                }, 500);
+                // Setup basic event handlers
+                setupEventHandlers(editorCore);
                 
             } catch (error) {
-                console.error('Failed to initialize application:', error);
-                document.getElementById('loading-screen').innerHTML = `
-                    <div style="text-align: center; color: var(--accent-error);">
-                        <h2>Initialization Failed</h2>
-                        <p>Error: ${error.message}</p>
-                        <button onclick="location.reload()">Retry</button>
-                    </div>
-                `;
+                console.error('Failed to initialize editor:', error);
             }
-        }
+        });
         
-        function updateLoadingProgress(percent, message) {
-            const progressBar = document.getElementById('loading-progress');
-            const loadingScreen = document.getElementById('loading-screen');
-            
-            if (progressBar) {
-                progressBar.style.width = `${percent}%`;
-            }
-            
-            const messageElement = loadingScreen.querySelector('p');
-            if (messageElement) {
-                messageElement.textContent = message;
-            }
-        }
-        
-        // Setup toolbar button handlers
-        function setupToolbarHandlers() {
-            // File operations
-            document.getElementById('new-scene').addEventListener('click', () => {
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.newScene();
-                    window.editorCore.showMessage('New scene created', 'success');
-                }
+        function setupEventHandlers(editorCore) {
+            // Scene control buttons
+            document.getElementById('play-scene').addEventListener('click', () => {
+                editorCore.playScene();
             });
             
-            document.getElementById('open-scene').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.json';
-                input.onchange = (e) => {
-                    const file = e.target.files[0];
-                    if (file && window.editorCore) {
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                            try {
-                                const sceneData = JSON.parse(event.target.result);
-                                window.editorCore.sceneManager.loadScene(sceneData);
-                                window.editorCore.showMessage('Scene loaded successfully', 'success');
-                            } catch (error) {
-                                window.editorCore.showMessage('Failed to load scene: ' + error.message, 'error');
-                            }
-                        };
-                        reader.readAsText(file);
-                    }
-                };
-                input.click();
+            document.getElementById('pause-scene').addEventListener('click', () => {
+                editorCore.pauseScene();
             });
             
-            document.getElementById('save-scene').addEventListener('click', () => {
-                if (window.editorCore) {
-                    const sceneData = window.editorCore.sceneManager.exportScene();
-                    const blob = new Blob([JSON.stringify(sceneData, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'scene.json';
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    window.editorCore.showMessage('Scene saved successfully', 'success');
-                }
+            document.getElementById('stop-scene').addEventListener('click', () => {
+                editorCore.stopScene();
             });
             
-            // Undo/Redo operations
-            document.getElementById('undo').addEventListener('click', () => {
-                if (window.editorCore) {
-                    window.editorCore.undo();
-                    window.editorCore.showMessage('Undone', 'info');
-                }
-            });
-            
-            document.getElementById('redo').addEventListener('click', () => {
-                if (window.editorCore) {
-                    window.editorCore.redo();
-                    window.editorCore.showMessage('Redone', 'info');
-                }
-            });
-            
-            // Transform tools
-
-            
-            document.getElementById('move-tool').addEventListener('click', () => {
-                setActiveTool('move-tool');
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.setTransformMode('translate');
-                    window.editorCore.showMessage('Move tool active', 'info');
-                }
-            });
-            
-            document.getElementById('rotate-tool').addEventListener('click', () => {
-                setActiveTool('rotate-tool');
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.setTransformMode('rotate');
-                    window.editorCore.showMessage('Rotate tool active', 'info');
-                }
-            });
-            
-            document.getElementById('scale-tool').addEventListener('click', () => {
-                setActiveTool('scale-tool');
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.setTransformMode('scale');
-                    window.editorCore.showMessage('Scale tool active', 'info');
-                }
-            });
-            
-            // 3D Model Import
+            // Import model button
             document.getElementById('import-model').addEventListener('click', () => {
                 const input = document.createElement('input');
                 input.type = 'file';
@@ -452,14 +228,14 @@
                 input.multiple = true;
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    if (files.length > 0 && window.editorCore) {
+                    if (files.length > 0) {
                         files.forEach(file => {
-                            window.editorCore.sceneManager.importModel(file)
+                            editorCore.sceneManager.importModel(file)
                                 .then(() => {
-                                    window.editorCore.showMessage(`Model "${file.name}" imported successfully`, 'success');
+                                    console.log(`Model "${file.name}" imported successfully`);
                                 })
                                 .catch(error => {
-                                    window.editorCore.showMessage(`Failed to import "${file.name}": ${error.message}`, 'error');
+                                    console.error(`Failed to import "${file.name}": ${error.message}`);
                                 });
                         });
                     }
@@ -467,89 +243,12 @@
                 input.click();
             });
             
-
-            
-            // Viewport controls
-            document.getElementById('wireframe-toggle').addEventListener('click', () => {
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.toggleWireframe();
-                    window.editorCore.showMessage('Wireframe toggled', 'info');
+            // Clear console button
+            document.getElementById('clear-console').addEventListener('click', () => {
+                const consoleOutput = document.getElementById('console-output');
+                if (consoleOutput) {
+                    consoleOutput.innerHTML = '';
                 }
-            });
-            
-            document.getElementById('grid-toggle').addEventListener('click', () => {
-                if (window.editorCore) {
-                    window.editorCore.sceneManager.toggleGrid();
-                    window.editorCore.showMessage('Grid toggled', 'info');
-                }
-            });
-            
-            document.getElementById('fullscreen-toggle').addEventListener('click', () => {
-                toggleFullscreen();
-            });
-        }
-        
-        // Helper function to set active tool
-        function setActiveTool(toolId) {
-            document.querySelectorAll('.tool-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(toolId).classList.add('active');
-        }
-        
-        // Helper function to toggle fullscreen
-        function toggleFullscreen() {
-            const viewport = document.getElementById('viewport');
-            if (!document.fullscreenElement) {
-                viewport.requestFullscreen().then(() => {
-                    window.editorCore.showMessage('Entered fullscreen mode', 'info');
-                }).catch(err => {
-                    window.editorCore.showMessage('Failed to enter fullscreen', 'error');
-                });
-            } else {
-                document.exitFullscreen().then(() => {
-                    window.editorCore.showMessage('Exited fullscreen mode', 'info');
-                });
-            }
-        }
-        
-    
-        
-        // Setup basic event handlers
-        function setupEventHandlers() {
-            // Toolbar button handlers
-            setupToolbarHandlers();
-            
-            // Plugin manager modal
-            document.getElementById('plugin-manager').addEventListener('click', () => {
-                document.getElementById('plugin-modal').classList.remove('hidden');
-                if (window.pluginManager) {
-                    window.pluginManager.refreshPluginList();
-                }
-            });
-            
-            // Settings modal
-            document.getElementById('settings').addEventListener('click', () => {
-                document.getElementById('settings-modal').classList.remove('hidden');
-            });
-            
-            // Modal close handlers
-            document.querySelectorAll('.modal-close').forEach(closeBtn => {
-                closeBtn.addEventListener('click', (event) => {
-                    const modal = closeBtn.closest('.modal');
-                    if (modal) {
-                        modal.classList.add('hidden');
-                    }
-                });
-            });
-            
-            // Close modals on background click
-            document.querySelectorAll('.modal').forEach(modal => {
-                modal.addEventListener('click', (event) => {
-                    if (event.target === modal) {
-                        modal.classList.add('hidden');
-                    }
-                });
             });
             
             // Console input
@@ -558,8 +257,48 @@
             
             function executeConsoleCommand() {
                 const command = consoleInput.value.trim();
-                if (command && window.editorCore) {
-                    window.editorCore.executeCommand(command);
+                if (command && editorCore) {
+                    try {
+                        // Simple command execution
+                        if (command === 'help') {
+                            console.log('Available commands: help, addCube, addTestCube, clear, scriptStatus, testSelection');
+                        } else if (command === 'addCube') {
+                            editorCore.sceneManager.addObject('cube', {
+                                name: 'ConsoleCube',
+                                x: Math.random() * 10 - 5,
+                                y: Math.random() * 10 - 5,
+                                z: Math.random() * 10 - 5,
+                                color: 0xff0000
+                            });
+                            console.log('Added cube via console command');
+                        } else if (command === 'addTestCube') {
+                            editorCore.sceneManager.addObject('cube', {
+                                name: 'TestCube',
+                                x: 0, y: 0, z: 0,
+                                color: 0x00ff00
+                            });
+                            console.log('Added test cube at origin');
+                        } else if (command === 'clear') {
+                            editorCore.sceneManager.clearScene();
+                            console.log('Scene cleared');
+                        } else if (command === 'scriptStatus') {
+                            const status = editorCore.componentSystem.getScriptStatus();
+                            console.log('Script Status:', status);
+                        } else if (command === 'testSelection') {
+                            const objects = Array.from(editorCore.sceneManager.objects.values());
+                            if (objects.length > 0) {
+                                const firstObject = objects[0];
+                                editorCore.sceneManager.selectObject(firstObject.id);
+                                console.log(`Selected object: ${firstObject.name} (${firstObject.id})`);
+                            } else {
+                                console.log('No objects in scene to select');
+                            }
+                        } else {
+                            console.log(`Unknown command: ${command}`);
+                        }
+                    } catch (error) {
+                        console.error('Command execution error:', error);
+                    }
                     consoleInput.value = '';
                 }
             }
@@ -571,36 +310,6 @@
                 }
             });
         }
-        
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            setupEventHandlers();
-            initializeApp();
-            // Direct test listeners for scene control buttons
-            document.getElementById('play-scene')?.addEventListener('click', () => {
-                console.log('Direct test: Play button clicked');
-            });
-            document.getElementById('pause-scene')?.addEventListener('click', () => {
-                console.log('Direct test: Pause button clicked');
-            });
-            document.getElementById('stop-scene')?.addEventListener('click', () => {
-                console.log('Direct test: Stop button clicked');
-            });
-        });
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.editorCore && window.editorCore.sceneManager) {
-                window.editorCore.sceneManager.handleResize();
-            }
-        });
-        
-        // Prevent context menu on viewport
-        document.addEventListener('contextmenu', (event) => {
-            if (event.target.closest('#viewport')) {
-                event.preventDefault();
-            }
-        });
     </script>
 </body>
 </html>
