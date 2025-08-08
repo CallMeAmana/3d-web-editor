@@ -78,8 +78,7 @@ class EditorCore {
             // Setup auto-save
             this.setupAutoSave();
             
-            // Initialize scene control buttons
-            this.updateSceneControlButtons();
+            // Button states are handled by UIManager
             
             // Mark as initialized
             this.isInitialized = true;
@@ -240,21 +239,8 @@ class EditorCore {
             this.eventBus.emit(EventBus.Events.TOOL_ACTIVATED, { tool: 'camera-reset' });
         });
         
-        // Scene control buttons
-        document.getElementById('play-scene')?.addEventListener('click', () => {
-            console.log('Play button clicked');
-            this.playScene();
-        });
-        
-        document.getElementById('pause-scene')?.addEventListener('click', () => {
-            console.log('Pause button clicked');
-            this.pauseScene();
-        });
-        
-        document.getElementById('stop-scene')?.addEventListener('click', () => {
-            console.log('Stop button clicked');
-            this.stopScene();
-        });
+        // Note: Scene control buttons (play/pause/stop) are now handled by UIManager
+        // to avoid duplicate event handlers
     }
 
     /**
@@ -693,14 +679,14 @@ class EditorCore {
      */
     playScene() {
         if (this.editorMode === 'play') {
-            console.log('Scene is already playing');
+            // console.log('Scene is already playing');
             return;
         }
         
         const wasPaused = this.editorMode === 'pause';
         this.editorMode = 'play';
         
-        console.log(`PlayScene called - wasPaused: ${wasPaused}, new mode: ${this.editorMode}`);
+        // console.log(`PlayScene called - wasPaused: ${wasPaused}, new mode: ${this.editorMode}`);
         
         // Initialize or resume script components
         if (this.componentSystem) {
@@ -712,11 +698,10 @@ class EditorCore {
         }
         
         this.eventBus.emit(EventBus.Events.SCENE_PLAY, { timestamp: Date.now() });
-        console.log('SCENE_PLAY event emitted');
+        // console.log('SCENE_PLAY event emitted');
         this.showMessage('Scene playing - scripts are now active', 'success');
         
-        // Update button states
-        this.updateSceneControlButtons();
+        // Button states are handled by UIManager via event listeners
     }
 
     /**
@@ -724,12 +709,12 @@ class EditorCore {
      */
     pauseScene() {
         if (this.editorMode !== 'play') {
-            console.log('Scene is not playing, cannot pause');
+            // console.log('Scene is not playing, cannot pause');
             return;
         }
         
         this.editorMode = 'pause';
-        console.log(`PauseScene called - new mode: ${this.editorMode}`);
+        // console.log(`PauseScene called - new mode: ${this.editorMode}`);
         
         // Pause script execution
         if (this.componentSystem) {
@@ -737,11 +722,10 @@ class EditorCore {
         }
         
         this.eventBus.emit(EventBus.Events.SCENE_PAUSE, { timestamp: Date.now() });
-        console.log('SCENE_PAUSE event emitted');
+        // console.log('SCENE_PAUSE event emitted');
         this.showMessage('Scene paused', 'info');
         
-        // Update button states
-        this.updateSceneControlButtons();
+        // Button states are handled by UIManager via event listeners
     }
 
     /**
@@ -751,7 +735,7 @@ class EditorCore {
         const wasPlaying = this.editorMode === 'play' || this.editorMode === 'pause';
         
         this.editorMode = 'edit';
-        console.log(`StopScene called - wasPlaying: ${wasPlaying}, new mode: ${this.editorMode}`);
+        // console.log(`StopScene called - wasPlaying: ${wasPlaying}, new mode: ${this.editorMode}`);
         
         // Stop and reset all script components
         if (this.componentSystem && wasPlaying) {
@@ -765,40 +749,10 @@ class EditorCore {
         }
         
         this.eventBus.emit(EventBus.Events.SCENE_STOP, { timestamp: Date.now() });
-        console.log('SCENE_STOP event emitted');
+        // console.log('SCENE_STOP event emitted');
         this.showMessage('Scene stopped - back to edit mode', 'info');
         
-        // Update button states
-        this.updateSceneControlButtons();
-    }
-
-    /**
-     * Update scene control button states
-     */
-    updateSceneControlButtons() {
-        const playBtn = document.getElementById('play-scene');
-        const pauseBtn = document.getElementById('pause-scene');
-        const stopBtn = document.getElementById('stop-scene');
-        
-        if (playBtn && pauseBtn && stopBtn) {
-            // Reset all buttons
-            playBtn.classList.remove('active');
-            pauseBtn.classList.remove('active');
-            stopBtn.classList.remove('active');
-            
-            // Set active button based on mode
-            switch (this.editorMode) {
-                case 'play':
-                    playBtn.classList.add('active');
-                    break;
-                case 'pause':
-                    pauseBtn.classList.add('active');
-                    break;
-                case 'edit':
-                    stopBtn.classList.add('active');
-                    break;
-            }
-        }
+        // Button states are handled by UIManager via event listeners
     }
 
     /**

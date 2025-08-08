@@ -209,18 +209,18 @@ class ComponentSystem {
             
             update(deltaTime) {
                 if (!this.enabled || !this.scriptInstance) {
-                    console.log(`Script update skipped - enabled: ${this.enabled}, hasInstance: ${!!this.scriptInstance}`);
+                    // console.log(`Script update skipped - enabled: ${this.enabled}, hasInstance: ${!!this.scriptInstance}`);
                     return;
                 }
                 
                 // Only update if scene is in play mode
                 const editor = EditorCore.getInstance();
                 if (editor.editorMode !== 'play') {
-                    console.log(`Script update skipped - editor mode: ${editor.editorMode}`);
+                    // console.log(`Script update skipped - editor mode: ${editor.editorMode}`);
                     return;
                 }
                 
-                console.log(`Script update called for entity ${this.entity}, deltaTime: ${deltaTime}`);
+                // console.log(`Script update called for entity ${this.entity}, deltaTime: ${deltaTime}`);
                 
                 // Update time in context
                 if (this.scriptInstance.context) {
@@ -232,9 +232,9 @@ class ComponentSystem {
                     if (currentObject) {
                         this.scriptInstance.context.gameObject = currentObject;
                         this.scriptInstance.context.this.gameObject = currentObject;
-                        console.log(`Updated gameObject reference for entity ${this.entity}:`, currentObject);
-                        console.log(`Object mesh position:`, currentObject.mesh.position);
-                        console.log(`Object mesh rotation:`, currentObject.mesh.rotation);
+                        // console.log(`Updated gameObject reference for entity ${this.entity}:`, currentObject);
+                        // console.log(`Object mesh position:`, currentObject.mesh.position);
+                        // console.log(`Object mesh rotation:`, currentObject.mesh.rotation);
                     } else {
                         console.warn(`Script update: Could not find object for entity ${this.entity}`);
                         return;
@@ -244,14 +244,14 @@ class ComponentSystem {
                 // Call update method if it exists
                 if (typeof this.scriptInstance.update === 'function') {
                     try {
-                        console.log(`Calling update() method for entity ${this.entity}`);
+                        // console.log(`Calling update() method for entity ${this.entity}`);
                         this.scriptInstance.update();
-                        console.log(`Update() method completed for entity ${this.entity}`);
+                        // console.log(`Update() method completed for entity ${this.entity}`);
                     } catch (error) {
                         console.error(`Error in script update for entity ${this.entity}:`, error);
                     }
                 } else {
-                    console.warn(`Script for entity ${this.entity} has no update() method`);
+                    // console.warn(`Script for entity ${this.entity} has no update() method`);
                 }
             }
             
@@ -767,8 +767,9 @@ class ComponentSystem {
             lastTime = currentTime;
             
             frameCount++;
-            if (frameCount % 60 === 0) { // Log every 60 frames (about once per second)
-                console.log(`Update loop running - frame: ${frameCount}, deltaTime: ${deltaTime.toFixed(4)}`);
+            // Only log every 300 frames (about every 5 seconds) instead of every 60
+            if (frameCount % 300 === 0) {
+                // console.log(`Update loop running - frame: ${frameCount}, deltaTime: ${deltaTime.toFixed(4)}`);
             }
             
             this.updateComponents(deltaTime);
@@ -776,7 +777,7 @@ class ComponentSystem {
             requestAnimationFrame(update);
         };
         
-        console.log('Starting component update loop');
+        // console.log('Starting component update loop');
         update();
     }
 
@@ -796,9 +797,9 @@ class ComponentSystem {
         if (!editor) return;
         
         // Debug: Log the current editor mode
-        if (editor.editorMode === 'play') {
-            console.log('Play mode detected, updating scripts...');
-        }
+        // if (editor.editorMode === 'play') {
+        //     console.log('Play mode detected, updating scripts...');
+        // }
         
         // Update script time tracking
         if (editor.editorMode === 'play') {
@@ -806,9 +807,9 @@ class ComponentSystem {
             this.entityComponents.forEach((components, entityId) => {
                 components.forEach((component, componentName) => {
                     if (typeof component.update === 'function') {
-                        if (componentName === 'Script') {
-                            console.log(`Updating script for entity: ${entityId}`);
-                        }
+                        // if (componentName === 'Script') {
+                        //     console.log(`Updating script for entity: ${entityId}`);
+                        // }
                         component.update(deltaTime);
                     }
                 });
@@ -838,7 +839,7 @@ class ComponentSystem {
      * Start script execution (called when play button is pressed)
      */
     startScriptExecution() {
-        console.log('Starting script execution system...');
+        // console.log('Starting script execution system...');
         this.scriptStartTime = performance.now();
         this.totalPausedTime = 0;
         
@@ -858,25 +859,25 @@ class ComponentSystem {
                 if (typeof scriptComponent.scriptInstance.start === 'function') {
                     try {
                         scriptComponent.scriptInstance.start();
-                        console.log(`Started script for entity: ${entityId}`);
+                        // console.log(`Started script for entity: ${entityId}`);
                         scriptCount++;
                     } catch (error) {
                         console.error(`Error starting script for entity ${entityId}:`, error);
                     }
                 } else {
-                    console.warn(`Script for entity ${entityId} has no start() method`);
+                    // console.warn(`Script for entity ${entityId} has no start() method`);
                 }
             }
         });
         
-        console.log(`Script execution started. ${scriptCount} scripts initialized.`);
+        // console.log(`Script execution started. ${scriptCount} scripts initialized.`);
     }
     
     /**
      * Stop script execution (called when stop button is pressed)
      */
     stopScriptExecution() {
-        console.log('Stopping script execution system...');
+        // console.log('Stopping script execution system...');
         
         // Call onDestroy() method on all script components
         this.entityComponents.forEach((components, entityId) => {
@@ -885,7 +886,7 @@ class ComponentSystem {
                 if (typeof scriptComponent.scriptInstance.onDestroy === 'function') {
                     try {
                         scriptComponent.scriptInstance.onDestroy();
-                        console.log(`Destroyed script for entity: ${entityId}`);
+                        // console.log(`Destroyed script for entity: ${entityId}`);
                     } catch (error) {
                         console.error(`Error destroying script for entity ${entityId}:`, error);
                     }
@@ -898,7 +899,7 @@ class ComponentSystem {
      * Pause script execution (called when pause button is pressed)
      */
     pauseScriptExecution() {
-        console.log('Pausing script execution system...');
+        // console.log('Pausing script execution system...');
         this.scriptPauseTime = performance.now();
     }
     
@@ -906,7 +907,7 @@ class ComponentSystem {
      * Resume script execution (called when play button is pressed after pause)
      */
     resumeScriptExecution() {
-        console.log('Resuming script execution system...');
+        // console.log('Resuming script execution system...');
         if (this.scriptPauseTime > 0) {
             this.totalPausedTime += performance.now() - this.scriptPauseTime;
             this.scriptPauseTime = 0;
@@ -917,7 +918,7 @@ class ComponentSystem {
      * Reset script execution state
      */
     resetScriptExecution() {
-        console.log('Resetting script execution system state...');
+        // console.log('Resetting script execution system state...');
         this.scriptStartTime = 0;
         this.scriptPauseTime = 0;
         this.totalPausedTime = 0;

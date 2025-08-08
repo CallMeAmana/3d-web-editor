@@ -34,6 +34,9 @@ class UIManager {
         this.setupHierarchy();
         
         console.log('UIManager initialized');
+        
+        // Initialize scene control button states to match edit/stop mode
+        this.updateSceneControls('stop');
     }
 
     /**
@@ -51,7 +54,7 @@ class UIManager {
         });
         
         this.eventBus.on(EventBus.Events.OBJECT_CREATED, (data) => {
-            console.log('Object created event received:', data);
+            // console.log('Object created event received:', data);
             this.updateHierarchy();
         });
         
@@ -80,6 +83,144 @@ class UIManager {
         this.eventBus.on(EventBus.Events.SCENE_STOP, () => {
             this.updateSceneControls('stop');
         });
+
+        // Setup toolbar button handlers
+        this.setupToolbarButtons();
+    }
+
+    /**
+     * Setup toolbar button event handlers
+     */
+    setupToolbarButtons() {
+        // Import model button
+        const importBtn = document.getElementById('import-model');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                this.handleImportModel();
+            });
+        }
+
+        // Scene control buttons
+        const playBtn = document.getElementById('play-scene');
+        const pauseBtn = document.getElementById('pause-scene');
+        const stopBtn = document.getElementById('stop-scene');
+
+        if (playBtn) {
+            playBtn.addEventListener('click', () => {
+                this.editorCore.playScene();
+            });
+        }
+
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => {
+                this.editorCore.pauseScene();
+            });
+        }
+
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => {
+                this.editorCore.stopScene();
+            });
+        }
+
+        // Clear console button
+        const clearConsoleBtn = document.getElementById('clear-console');
+        if (clearConsoleBtn) {
+            clearConsoleBtn.addEventListener('click', () => {
+                const consoleOutput = document.getElementById('console-output');
+                if (consoleOutput) {
+                    consoleOutput.innerHTML = '';
+                }
+            });
+        }
+
+        // Console input
+        const consoleInput = document.getElementById('console-input');
+        const consoleSubmit = document.getElementById('console-submit');
+        
+        if (consoleSubmit && consoleInput) {
+            const executeConsoleCommand = () => {
+                const command = consoleInput.value.trim();
+                if (command && this.editorCore) {
+                    try {
+                        // Simple command execution
+                        if (command === 'help') {
+                            console.log('Available commands: help, addCube, addTestCube, clear, scriptStatus, testSelection');
+                        } else if (command === 'addCube') {
+                            this.editorCore.sceneManager.addObject('cube', {
+                                name: 'ConsoleCube',
+                                x: Math.random() * 10 - 5,
+                                y: Math.random() * 10 - 5,
+                                z: Math.random() * 10 - 5,
+                                color: 0xff0000
+                            });
+                            console.log('Added cube via console command');
+                        } else if (command === 'addTestCube') {
+                            this.editorCore.sceneManager.addObject('cube', {
+                                name: 'TestCube',
+                                x: 0, y: 0, z: 0,
+                                color: 0x00ff00
+                            });
+                            console.log('Added test cube at origin');
+                        } else if (command === 'clear') {
+                            this.editorCore.sceneManager.clearScene();
+                            console.log('Scene cleared');
+                        } else if (command === 'scriptStatus') {
+                            const status = this.editorCore.componentSystem.getScriptStatus();
+                            console.log('Script Status:', status);
+                        } else if (command === 'testSelection') {
+                            const objects = Array.from(this.editorCore.sceneManager.objects.values());
+                            if (objects.length > 0) {
+                                const firstObject = objects[0];
+                                this.editorCore.sceneManager.selectObject(firstObject.id);
+                                console.log(`Selected object: ${firstObject.name} (${firstObject.id})`);
+                            } else {
+                                console.log('No objects in scene to select');
+                            }
+                        } else {
+                            console.log(`Unknown command: ${command}`);
+                        }
+                    } catch (error) {
+                        console.error('Command execution error:', error);
+                    }
+                    consoleInput.value = '';
+                }
+            };
+            
+            consoleSubmit.addEventListener('click', executeConsoleCommand);
+            consoleInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    executeConsoleCommand();
+                }
+            });
+        }
+    }
+
+    /**
+     * Handle import model button click
+     */
+    handleImportModel() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.glb,.gltf,.fbx,.obj,.dae,.3ds,.ply,.stl';
+        input.multiple = true;
+        input.onchange = (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                files.forEach(file => {
+                    this.editorCore.sceneManager.importModel(file)
+                        .then(() => {
+                            console.log(`Model "${file.name}" imported successfully`);
+                            this.editorCore.showMessage(`Model "${file.name}" imported successfully`, 'success');
+                        })
+                        .catch(error => {
+                            console.error(`Failed to import "${file.name}": ${error.message}`);
+                            this.editorCore.showMessage(`Failed to import "${file.name}": ${error.message}`, 'error');
+                        });
+                });
+            }
+        };
+        input.click();
     }
 
     /**
@@ -339,28 +480,28 @@ class UIManager {
                 <h4>${object.name}</h4>
                 <div class="property-group">
                     <h6>Transform</h6>
-                    <div class="property-row">
+                    <div class="property-row vertical-inputs">
                         <label>Position:</label>
-                        <div class="vector-input">
-                            <input type="number" id="pos-x" value="${object.properties.position.x.toFixed(2)}" step="0.1">
-                            <input type="number" id="pos-y" value="${object.properties.position.y.toFixed(2)}" step="0.1">
-                            <input type="number" id="pos-z" value="${object.properties.position.z.toFixed(2)}" step="0.1">
+                        <div class="vector-input vertical-inputs">
+                            <input type="number" id="pos-x" value="${object.properties.position.x.toFixed(2)}" step="0.1" placeholder="X">
+                            <input type="number" id="pos-y" value="${object.properties.position.y.toFixed(2)}" step="0.1" placeholder="Y">
+                            <input type="number" id="pos-z" value="${object.properties.position.z.toFixed(2)}" step="0.1" placeholder="Z">
                         </div>
                     </div>
-                    <div class="property-row">
+                    <div class="property-row vertical-inputs">
                         <label>Rotation:</label>
-                        <div class="vector-input">
-                            <input type="number" id="rot-x" value="${(object.properties.rotation.x * 180 / Math.PI).toFixed(1)}" step="1">
-                            <input type="number" id="rot-y" value="${(object.properties.rotation.y * 180 / Math.PI).toFixed(1)}" step="1">
-                            <input type="number" id="rot-z" value="${(object.properties.rotation.z * 180 / Math.PI).toFixed(1)}" step="1">
+                        <div class="vector-input vertical-inputs">
+                            <input type="number" id="rot-x" value="${(object.properties.rotation.x * 180 / Math.PI).toFixed(1)}" step="1" placeholder="X">
+                            <input type="number" id="rot-y" value="${(object.properties.rotation.y * 180 / Math.PI).toFixed(1)}" step="1" placeholder="Y">
+                            <input type="number" id="rot-z" value="${(object.properties.rotation.z * 180 / Math.PI).toFixed(1)}" step="1" placeholder="Z">
                         </div>
                     </div>
-                    <div class="property-row">
+                    <div class="property-row vertical-inputs">
                         <label>Scale:</label>
-                        <div class="vector-input">
-                            <input type="number" id="scale-x" value="${object.properties.scale.x.toFixed(2)}" step="0.1">
-                            <input type="number" id="scale-y" value="${object.properties.scale.y.toFixed(2)}" step="0.1">
-                            <input type="number" id="scale-z" value="${object.properties.scale.z.toFixed(2)}" step="0.1">
+                        <div class="vector-input vertical-inputs">
+                            <input type="number" id="scale-x" value="${object.properties.scale.x.toFixed(2)}" step="0.1" placeholder="X">
+                            <input type="number" id="scale-y" value="${object.properties.scale.y.toFixed(2)}" step="0.1" placeholder="Y">
+                            <input type="number" id="scale-z" value="${object.properties.scale.z.toFixed(2)}" step="0.1" placeholder="Z">
                         </div>
                     </div>
                 </div>
@@ -790,7 +931,7 @@ class UIManager {
      * Update scene controls and UI state based on play mode
      */
     updateSceneControls(mode) {
-        console.log(`updateSceneControls called with mode: ${mode}`);
+        // console.log(`updateSceneControls called with mode: ${mode}`);
         
         const playBtn = document.getElementById('play-scene');
         const pauseBtn = document.getElementById('pause-scene');
@@ -802,18 +943,27 @@ class UIManager {
             pauseBtn.classList.remove('active');
             stopBtn.classList.remove('active');
             
-            // Set active button based on mode
+            // Set active button and enable/disable based on mode
             switch (mode) {
                 case 'play':
                     playBtn.classList.add('active');
+                    playBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                    stopBtn.disabled = false;
                     this.setPlayModeUI(true);
                     break;
                 case 'pause':
                     pauseBtn.classList.add('active');
+                    playBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    stopBtn.disabled = false;
                     this.setPlayModeUI(true);
                     break;
                 case 'stop':
                     stopBtn.classList.add('active');
+                    playBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    stopBtn.disabled = true;
                     this.setPlayModeUI(false);
                     break;
             }
@@ -826,64 +976,47 @@ class UIManager {
      * Set UI state for play mode (disable editing panels)
      */
     setPlayModeUI(isPlayMode) {
-        console.log(`setPlayModeUI called with isPlayMode: ${isPlayMode}`);
+        // console.log(`setPlayModeUI called with isPlayMode: ${isPlayMode}`);
         
-        // Get all panels that should be disabled during play mode
+        // Panels that can be dimmed, but toolbar must stay clickable for controls
         const inspectorPanel = document.getElementById('inspector-panel');
         const hierarchyPanel = document.getElementById('hierarchy-panel');
-        const toolbarPanel = document.getElementById('main-toolbar');
         const componentPanel = document.getElementById('component-panel');
+        const toolbarPanel = document.getElementById('main-toolbar');
         
-        console.log('Found panels:', {
-            inspectorPanel: !!inspectorPanel,
-            hierarchyPanel: !!hierarchyPanel,
-            toolbarPanel: !!toolbarPanel,
-            componentPanel: !!componentPanel
-        });
-        
-        // Add/remove disabled class and disable interactions
-        const panelsToDisable = [inspectorPanel, hierarchyPanel, toolbarPanel, componentPanel];
+        const panelsToDisable = [inspectorPanel, hierarchyPanel, componentPanel];
         
         panelsToDisable.forEach(panel => {
-            if (panel) {
-                if (isPlayMode) {
-                    console.log(`Disabling panel: ${panel.id || panel.className}`);
-                    panel.classList.add('play-mode-disabled');
-                    panel.style.pointerEvents = 'none';
-                    panel.style.opacity = '0.6';
-                    
-                    // Disable all input elements within the panel, except scene control buttons
-                    const inputs = panel.querySelectorAll('input, select, textarea, button');
-                    inputs.forEach(input => {
-                        // Don't disable scene control buttons
-                        if (!input.id || !['play-scene', 'pause-scene', 'stop-scene'].includes(input.id)) {
-                            input.disabled = true;
-                            console.log(`Disabled input element:`, input);
-                        }
-                    });
-                    
-                    console.log(`Panel ${panel.id} disabled successfully`);
-                } else {
-                    console.log(`Enabling panel: ${panel.id || panel.className}`);
-                    panel.classList.remove('play-mode-disabled');
-                    panel.style.pointerEvents = 'auto';
-                    panel.style.opacity = '1';
-                    
-                    // Re-enable all input elements within the panel
-                    const inputs = panel.querySelectorAll('input, select, textarea, button');
-                    inputs.forEach(input => {
-                        input.disabled = false;
-                        console.log(`Enabled input element:`, input);
-                    });
-                    
-                    console.log(`Panel ${panel.id} enabled successfully`);
-                }
+            if (!panel) return;
+            if (isPlayMode) {
+                panel.classList.add('play-mode-disabled');
+                panel.style.pointerEvents = 'none';
+                panel.style.opacity = '0.6';
+                const inputs = panel.querySelectorAll('input, select, textarea, button');
+                inputs.forEach(input => { input.disabled = true; });
             } else {
-                console.warn(`Panel not found: ${panel}`);
+                panel.classList.remove('play-mode-disabled');
+                panel.style.pointerEvents = 'auto';
+                panel.style.opacity = '1';
+                const inputs = panel.querySelectorAll('input, select, textarea, button');
+                inputs.forEach(input => { input.disabled = false; });
             }
         });
         
-        // Show/hide play mode indicator
+        // Keep toolbar interactive. Only disable non-control buttons when playing
+        if (toolbarPanel) {
+            const toolbarButtons = toolbarPanel.querySelectorAll('button');
+            toolbarButtons.forEach(btn => {
+                const id = btn.id || '';
+                const isControl = ['play-scene','pause-scene','stop-scene'].includes(id);
+                if (isPlayMode) {
+                    if (!isControl) btn.disabled = true;
+                } else {
+                    btn.disabled = false;
+                }
+            });
+        }
+        
         this.showPlayModeIndicator(isPlayMode);
     }
 
