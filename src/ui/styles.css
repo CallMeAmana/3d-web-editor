@@ -203,6 +203,10 @@ body {
     border-radius: var(--radius);
     cursor: pointer;
     transition: var(--transition);
+    -webkit-backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
 
