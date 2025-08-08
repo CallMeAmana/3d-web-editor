@@ -138,6 +138,7 @@
     <script src="src/core/ComponentSystem.js"></script>
     <script src="src/core/AssetManager.js"></script>
     <script src="src/core/EditorCore.js"></script>
+    <script src="src/core/PluginManager.js"></script>
     <script src="src/ui/UIManager.js"></script>
     
     <!-- Main Application Script -->
@@ -198,118 +199,15 @@
                 // Setup global references for UI functions
                 window.uiManager = editorCore.uiManager;
                 
-                // Setup basic event handlers
-                setupEventHandlers(editorCore);
+                // UIManager and EditorCore already attach toolbar handlers
+                // Remove duplicate inline handlers to avoid double events
                 
             } catch (error) {
                 console.error('Failed to initialize editor:', error);
             }
         });
         
-        function setupEventHandlers(editorCore) {
-            // Scene control buttons
-            document.getElementById('play-scene').addEventListener('click', () => {
-                editorCore.playScene();
-            });
-            
-            document.getElementById('pause-scene').addEventListener('click', () => {
-                editorCore.pauseScene();
-            });
-            
-            document.getElementById('stop-scene').addEventListener('click', () => {
-                editorCore.stopScene();
-            });
-            
-            // Import model button
-            document.getElementById('import-model').addEventListener('click', () => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.glb,.gltf,.fbx,.obj,.dae,.3ds,.ply,.stl';
-                input.multiple = true;
-                input.onchange = (e) => {
-                    const files = Array.from(e.target.files);
-                    if (files.length > 0) {
-                        files.forEach(file => {
-                            editorCore.sceneManager.importModel(file)
-                                .then(() => {
-                                    console.log(`Model "${file.name}" imported successfully`);
-                                })
-                                .catch(error => {
-                                    console.error(`Failed to import "${file.name}": ${error.message}`);
-                                });
-                        });
-                    }
-                };
-                input.click();
-            });
-            
-            // Clear console button
-            document.getElementById('clear-console').addEventListener('click', () => {
-                const consoleOutput = document.getElementById('console-output');
-                if (consoleOutput) {
-                    consoleOutput.innerHTML = '';
-                }
-            });
-            
-            // Console input
-            const consoleInput = document.getElementById('console-input');
-            const consoleSubmit = document.getElementById('console-submit');
-            
-            function executeConsoleCommand() {
-                const command = consoleInput.value.trim();
-                if (command && editorCore) {
-                    try {
-                        // Simple command execution
-                        if (command === 'help') {
-                            console.log('Available commands: help, addCube, addTestCube, clear, scriptStatus, testSelection');
-                        } else if (command === 'addCube') {
-                            editorCore.sceneManager.addObject('cube', {
-                                name: 'ConsoleCube',
-                                x: Math.random() * 10 - 5,
-                                y: Math.random() * 10 - 5,
-                                z: Math.random() * 10 - 5,
-                                color: 0xff0000
-                            });
-                            console.log('Added cube via console command');
-                        } else if (command === 'addTestCube') {
-                            editorCore.sceneManager.addObject('cube', {
-                                name: 'TestCube',
-                                x: 0, y: 0, z: 0,
-                                color: 0x00ff00
-                            });
-                            console.log('Added test cube at origin');
-                        } else if (command === 'clear') {
-                            editorCore.sceneManager.clearScene();
-                            console.log('Scene cleared');
-                        } else if (command === 'scriptStatus') {
-                            const status = editorCore.componentSystem.getScriptStatus();
-                            console.log('Script Status:', status);
-                        } else if (command === 'testSelection') {
-                            const objects = Array.from(editorCore.sceneManager.objects.values());
-                            if (objects.length > 0) {
-                                const firstObject = objects[0];
-                                editorCore.sceneManager.selectObject(firstObject.id);
-                                console.log(`Selected object: ${firstObject.name} (${firstObject.id})`);
-                            } else {
-                                console.log('No objects in scene to select');
-                            }
-                        } else {
-                            console.log(`Unknown command: ${command}`);
-                        }
-                    } catch (error) {
-                        console.error('Command execution error:', error);
-                    }
-                    consoleInput.value = '';
-                }
-            }
-            
-            consoleSubmit.addEventListener('click', executeConsoleCommand);
-            consoleInput.addEventListener('keypress', (event) => {
-                if (event.key === 'Enter') {
-                    executeConsoleCommand();
-                }
-            });
-        }
+        // Removed inline setupEventHandlers; UI is managed by classes
     </script>
 </body>
 </html>

@@ -37,6 +37,9 @@ class UIManager {
         
         // Initialize scene control button states to match edit/stop mode
         this.updateSceneControls('stop');
+        
+        // Initialize viewport control button states
+        this.initializeViewportButtonStates();
     }
 
     /**
@@ -92,6 +95,69 @@ class UIManager {
      * Setup toolbar button event handlers
      */
     setupToolbarButtons() {
+        // Scene management buttons
+        const newSceneBtn = document.getElementById('new-scene');
+        if (newSceneBtn) {
+            newSceneBtn.addEventListener('click', () => {
+                this.editorCore.newProject();
+            });
+        }
+
+        const saveSceneBtn = document.getElementById('save-scene');
+        if (saveSceneBtn) {
+            saveSceneBtn.addEventListener('click', () => {
+                this.editorCore.saveProject();
+            });
+        }
+
+        const openSceneBtn = document.getElementById('open-scene');
+        if (openSceneBtn) {
+            openSceneBtn.addEventListener('click', () => {
+                this.editorCore.openProject();
+            });
+        }
+
+        // Undo/Redo buttons
+        const undoBtn = document.getElementById('undo');
+        if (undoBtn) {
+            undoBtn.addEventListener('click', () => {
+                this.editorCore.undo();
+            });
+        }
+
+        const redoBtn = document.getElementById('redo');
+        if (redoBtn) {
+            redoBtn.addEventListener('click', () => {
+                this.editorCore.redo();
+            });
+        }
+
+        // Viewport control buttons
+        const wireframeToggleBtn = document.getElementById('wireframe-toggle');
+        if (wireframeToggleBtn) {
+            wireframeToggleBtn.addEventListener('click', () => {
+                this.editorCore.sceneManager.toggleWireframe();
+                // Update button state based on actual setting
+                wireframeToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.wireframe);
+            });
+        }
+
+        const gridToggleBtn = document.getElementById('grid-toggle');
+        if (gridToggleBtn) {
+            gridToggleBtn.addEventListener('click', () => {
+                this.editorCore.sceneManager.toggleGrid();
+                // Update button state based on actual setting
+                gridToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.showGrid);
+            });
+        }
+
+        const fullscreenToggleBtn = document.getElementById('fullscreen-toggle');
+        if (fullscreenToggleBtn) {
+            fullscreenToggleBtn.addEventListener('click', () => {
+                this.toggleFullscreen();
+            });
+        }
+
         // Import model button
         const importBtn = document.getElementById('import-model');
         if (importBtn) {
@@ -1117,6 +1183,50 @@ class UIManager {
         if (this.contextMenu) {
             this.contextMenu.remove();
             this.contextMenu = null;
+        }
+    }
+
+    /**
+     * Toggle fullscreen mode
+     */
+    toggleFullscreen() {
+        const viewport = document.getElementById('viewport');
+        if (!viewport) return;
+
+        if (!document.fullscreenElement) {
+            // Enter fullscreen
+            if (viewport.requestFullscreen) {
+                viewport.requestFullscreen();
+            } else if (viewport.webkitRequestFullscreen) {
+                viewport.webkitRequestFullscreen();
+            } else if (viewport.msRequestFullscreen) {
+                viewport.msRequestFullscreen();
+            }
+        } else {
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+    }
+
+    /**
+     * Initialize viewport button states
+     */
+    initializeViewportButtonStates() {
+        const wireframeToggleBtn = document.getElementById('wireframe-toggle');
+        const gridToggleBtn = document.getElementById('grid-toggle');
+
+        if (wireframeToggleBtn) {
+            wireframeToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.wireframe);
+        }
+
+        if (gridToggleBtn) {
+            gridToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.showGrid);
         }
     }
 

@@ -601,6 +601,50 @@ class SceneManager {
                     options.radialSegments || 8
                 );
                 break;
+            // Light placeholders: create a transformable handle (group) so Light component can attach a real light
+            case 'light':
+            case 'directional-light':
+            case 'point-light':
+            case 'spot-light':
+            case 'ambient-light': {
+                // Use an empty Object3D as a transform anchor for the light
+                const anchor = new THREE.Object3D();
+                anchor.position.set(
+                    options.x || 0,
+                    options.y || 0,
+                    options.z || 0
+                );
+                anchor.userData.id = id;
+
+                // Optionally add a tiny gizmo sphere to visualize the anchor (non-rendered in shadows)
+                const gizmoGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+                const gizmoMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+                const gizmo = new THREE.Mesh(gizmoGeometry, gizmoMaterial);
+                gizmo.visible = true;
+                anchor.add(gizmo);
+
+                this.scene.add(anchor);
+
+                const lightObject = {
+                    id,
+                    name: options.name || (type.replace('-light', '') + ' Light'),
+                    type,
+                    mesh: anchor,
+                    properties: {
+                        position: { x: anchor.position.x, y: anchor.position.y, z: anchor.position.z },
+                        rotation: { x: 0, y: 0, z: 0 },
+                        scale: { x: 1, y: 1, z: 1 },
+                        color: options.color || 0xffffff,
+                        intensity: options.intensity || 1,
+                        distance: options.distance || 0
+                    }
+                };
+
+                this.objects.set(id, lightObject);
+                this.eventBus.emit(EventBus.Events.OBJECT_CREATED, { object: lightObject });
+                this.updateStats();
+                return lightObject;
+            }
             default:
                 console.warn(`Unknown object type: ${type}`);
                 return null;
