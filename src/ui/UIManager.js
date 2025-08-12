@@ -133,22 +133,16 @@ class UIManager {
         }
 
         // Viewport control buttons
-        const wireframeToggleBtn = document.getElementById('wireframe-toggle');
-        if (wireframeToggleBtn) {
-            wireframeToggleBtn.addEventListener('click', () => {
-                this.editorCore.sceneManager.toggleWireframe();
-                // Update button state based on actual setting
-                wireframeToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.wireframe);
-            });
-        }
-
         const gridToggleBtn = document.getElementById('grid-toggle');
         if (gridToggleBtn) {
             gridToggleBtn.addEventListener('click', () => {
                 this.editorCore.sceneManager.toggleGrid();
                 // Update button state based on actual setting
-                gridToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.showGrid);
+                const newState = this.editorCore.sceneManager.settings.showGrid;
+                gridToggleBtn.classList.toggle('active', newState);
             });
+        } else {
+            console.error('Grid toggle button not found!');
         }
 
         const fullscreenToggleBtn = document.getElementById('fullscreen-toggle');
@@ -562,13 +556,9 @@ class UIManager {
                             <input type="number" id="rot-z" value="${(object.properties.rotation.z * 180 / Math.PI).toFixed(1)}" step="1" placeholder="Z">
                         </div>
                     </div>
-                    <div class="property-row vertical-inputs">
-                        <label>Scale:</label>
-                        <div class="vector-input vertical-inputs">
-                            <input type="number" id="scale-x" value="${object.properties.scale.x.toFixed(2)}" step="0.1" placeholder="X">
-                            <input type="number" id="scale-y" value="${object.properties.scale.y.toFixed(2)}" step="0.1" placeholder="Y">
-                            <input type="number" id="scale-z" value="${object.properties.scale.z.toFixed(2)}" step="0.1" placeholder="Z">
-                        </div>
+                    <div class="property-row">
+                        <label>Size:</label>
+                        <input type="number" id="size-input" value="${object.properties.size || 1.0}" step="0.25" placeholder="Size">
                     </div>
                 </div>
         `;
@@ -706,7 +696,7 @@ class UIManager {
         // Transform controls
         const posInputs = ['pos-x', 'pos-y', 'pos-z'];
         const rotInputs = ['rot-x', 'rot-y', 'rot-z'];
-        const scaleInputs = ['scale-x', 'scale-y', 'scale-z'];
+
         
         posInputs.forEach((id, index) => {
             const input = document.getElementById(id);
@@ -740,19 +730,21 @@ class UIManager {
             }
         });
         
-        scaleInputs.forEach((id, index) => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('change', () => {
-                    const axes = ['x', 'y', 'z'];
-                    const axis = axes[index];
-                    const value = parseFloat(input.value);
-                    
-                    if (object.mesh) {
-                        object.mesh.scale[axis] = value;
-                        object.properties.scale[axis] = value;
-                    }
-                });
+        // Size input
+        const sizeInput = document.getElementById('size-input');
+        if (sizeInput) {
+            sizeInput.addEventListener('change', () => {
+                let size = parseFloat(sizeInput.value);
+                if (isNaN(size) || size <= 0) size = 0.01;
+                sizeInput.value = size;
+                this.editorCore.sceneManager.setObjectUniformSize(object.id, size);
+            });
+        }
+
+        // Listen for size updates from the scene (e.g., from gizmo)
+        this.eventBus.on('object:size-updated', (data) => {
+            if (data.id === object.id && sizeInput) {
+                sizeInput.value = data.size;
             }
         });
         
@@ -1218,12 +1210,7 @@ class UIManager {
      * Initialize viewport button states
      */
     initializeViewportButtonStates() {
-        const wireframeToggleBtn = document.getElementById('wireframe-toggle');
         const gridToggleBtn = document.getElementById('grid-toggle');
-
-        if (wireframeToggleBtn) {
-            wireframeToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.wireframe);
-        }
 
         if (gridToggleBtn) {
             gridToggleBtn.classList.toggle('active', this.editorCore.sceneManager.settings.showGrid);

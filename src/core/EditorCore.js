@@ -183,11 +183,27 @@ class EditorCore {
         
         // Listen for object events
         this.eventBus.on(EventBus.Events.OBJECT_CREATED, (data) => {
-            this.executeCommand(new CreateObjectCommand(data.object));
+            // Track object creation for undo/redo
+            const command = new CreateObjectCommand(data.object);
+            this.executeCommand(command);
         });
         
         this.eventBus.on(EventBus.Events.OBJECT_DELETED, (data) => {
-            this.executeCommand(new DeleteObjectCommand(data.object));
+            // Track object deletion for undo/redo
+            const command = new DeleteObjectCommand(data.object);
+            this.executeCommand(command);
+        });
+        
+        // Listen for transform commands
+        this.eventBus.on(EventBus.Events.TRANSFORM_COMMAND, (data) => {
+            if (data.type === 'transform') {
+                const command = new TransformObjectCommand(
+                    data.objectId,
+                    data.oldTransform,
+                    data.newTransform
+                );
+                this.executeCommand(command);
+            }
         });
     }
 
@@ -209,8 +225,8 @@ class EditorCore {
             this.activateTool('rotate');
         });
         
-        document.getElementById('scale-tool')?.addEventListener('click', () => {
-            this.activateTool('scale');
+        document.getElementById('size-tool')?.addEventListener('click', () => {
+            this.activateTool('size');
         });
         
         // Object creation tools
@@ -227,14 +243,6 @@ class EditorCore {
         });
         
         // Viewport controls
-        document.getElementById('wireframe-toggle')?.addEventListener('click', () => {
-            this.eventBus.emit(EventBus.Events.TOOL_ACTIVATED, { tool: 'wireframe' });
-        });
-        
-        document.getElementById('grid-toggle')?.addEventListener('click', () => {
-            this.eventBus.emit(EventBus.Events.TOOL_ACTIVATED, { tool: 'grid' });
-        });
-        
         document.getElementById('camera-reset')?.addEventListener('click', () => {
             this.eventBus.emit(EventBus.Events.TOOL_ACTIVATED, { tool: 'camera-reset' });
         });
@@ -490,12 +498,25 @@ class EditorCore {
                 settings: this.settings
             };
             
-            // For now, save to localStorage
-            localStorage.setItem('3d-editor-project', JSON.stringify(projectData));
+            // Create a JSON blob and download it to the user's PC
+            const jsonString = JSON.stringify(projectData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            
+            // Create download link
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${this.project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_scene.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            // Clean up
+            URL.revokeObjectURL(url);
             
             this.project.modified = new Date();
-            console.log('Project saved successfully');
-            this.showMessage('Project saved successfully', 'success');
+            console.log('Project saved successfully to local machine');
+            this.showMessage('Project saved successfully to local machine', 'success');
             
         } catch (error) {
             console.error('Failed to save project:', error);
@@ -580,13 +601,42 @@ class EditorCore {
      * Open project from file
      */
     openProject() {
-        // For now, load from localStorage
-        const savedProject = localStorage.getItem('3d-editor-project');
-        if (savedProject) {
-            this.loadProject(savedProject);
-        } else {
-            this.showMessage('No saved project found', 'warning');
-        }
+        // Create a file input to select JSON files from the user's PC
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json';
+        fileInput.style.display = 'none';
+        
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                try {
+                    const text = await file.text();
+                    const projectData = JSON.parse(text);
+                    
+                    // Load the project
+                    await this.loadProject(projectData);
+                    
+                    // Update project name from filename
+                    const fileName = file.name.replace('.json', '');
+                    this.project.name = fileName;
+                    
+                    console.log('Project loaded from file:', fileName);
+                    this.showMessage(`Project loaded from file: ${fileName}`, 'success');
+                    
+                } catch (error) {
+                    console.error('Failed to load project from file:', error);
+                    this.showError('Failed to load project', 'Invalid JSON file or corrupted project data');
+                }
+            }
+            
+            // Clean up
+            document.body.removeChild(fileInput);
+        });
+        
+        // Trigger file selection
+        document.body.appendChild(fileInput);
+        fileInput.click();
     }
 
     /**
@@ -832,6 +882,122 @@ class DeleteObjectCommand extends Command {
         // Recreate the object
         const editor = EditorCore.getInstance();
         editor.sceneManager.addObject(this.object.type, this.object.properties);
+    }
+}
+
+class TransformObjectCommand extends Command {
+    constructor(objectId, oldTransform, newTransform) {
+        super();
+        this.objectId = objectId;
+        this.oldTransform = oldTransform;
+        this.newTransform = newTransform;
+    }
+    
+    execute() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.mesh) {
+            object.mesh.position.copy(this.newTransform.position);
+            object.mesh.rotation.copy(this.newTransform.rotation);
+            object.mesh.scale.copy(this.newTransform.scale);
+            Object.assign(object.properties, this.newTransform);
+        }
+    }
+    
+    undo() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.mesh) {
+            object.mesh.position.copy(this.oldTransform.position);
+            object.mesh.rotation.copy(this.oldTransform.rotation);
+            object.mesh.scale.copy(this.oldTransform.scale);
+            Object.assign(object.properties, this.oldTransform);
+        }
+    }
+}
+
+class PropertyChangeCommand extends Command {
+    constructor(objectId, propertyPath, oldValue, newValue) {
+        super();
+        this.objectId = objectId;
+        this.propertyPath = propertyPath;
+        this.oldValue = oldValue;
+        this.newValue = newValue;
+    }
+    
+    execute() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object) {
+            this.setNestedProperty(object.properties, this.propertyPath, this.newValue);
+        }
+    }
+    
+    undo() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object) {
+            this.setNestedProperty(object.properties, this.propertyPath, this.oldValue);
+        }
+    }
+    
+    setNestedProperty(obj, path, value) {
+        const keys = path.split('.');
+        const lastKey = keys.pop();
+        const target = keys.reduce((current, key) => current[key], obj);
+        if (target && target.hasOwnProperty(lastKey)) {
+            target[lastKey] = value;
+        }
+    }
+}
+
+class ComponentAddCommand extends Command {
+    constructor(objectId, componentType, componentData) {
+        super();
+        this.objectId = objectId;
+        this.componentType = componentType;
+        this.componentData = componentData;
+    }
+    
+    execute() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.components) {
+            object.components.set(this.componentType, this.componentData);
+        }
+    }
+    
+    undo() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.components) {
+            object.components.delete(this.componentType);
+        }
+    }
+}
+
+class ComponentRemoveCommand extends Command {
+    constructor(objectId, componentType, componentData) {
+        super();
+        this.objectId = objectId;
+        this.componentType = componentType;
+        this.componentData = componentData;
+    }
+    
+    execute() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.components) {
+            object.components.delete(this.componentType);
+        }
+    }
+    
+    undo() {
+        const editor = EditorCore.getInstance();
+        const object = editor.sceneManager.objects.get(this.objectId);
+        if (object && object.components) {
+            object.components.set(this.componentType, this.componentData);
+        }
     }
 }
 

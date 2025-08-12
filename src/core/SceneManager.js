@@ -43,6 +43,9 @@ class SceneManager {
             antialias: true
         };
 
+        // Current transform mode
+        this.currentTransformMode = 'select';
+
         this.init();
     }
 
@@ -184,15 +187,36 @@ class SceneManager {
             if (object && object.userData.id) {
                 const sceneObject = this.objects.get(object.userData.id);
                 if (sceneObject) {
+                    // Normal transform modes
+                    const oldTransform = {
+                        position: sceneObject.properties.position.clone(),
+                        rotation: sceneObject.properties.rotation.clone(),
+                        scale: sceneObject.properties.scale.clone()
+                    };
+                    
                     sceneObject.properties.position = object.position.clone();
                     sceneObject.properties.rotation = object.rotation.clone();
                     sceneObject.properties.scale = object.scale.clone();
                     
-                    this.eventBus.emit(EventBus.Events.OBJECT_TRANSFORMED, {
-                        id: object.userData.id,
-                        object: sceneObject
+                    // Emit command for undo/redo
+                    const newTransform = {
+                        position: object.position.clone(),
+                        rotation: object.rotation.clone(),
+                        scale: object.scale.clone()
+                    };
+                    
+                    this.eventBus.emit(EventBus.Events.TRANSFORM_COMMAND, {
+                        type: 'transform',
+                        objectId: object.userData.id,
+                        oldTransform,
+                        newTransform
                     });
                 }
+                
+                this.eventBus.emit(EventBus.Events.OBJECT_TRANSFORMED, {
+                    id: object.userData.id,
+                    object: sceneObject
+                });
             }
         });
         
@@ -518,12 +542,6 @@ class SceneManager {
             case 'rotate':
                 this.setTransformMode('rotate');
                 break;
-            case 'scale':
-                this.setTransformMode('scale');
-                break;
-            case 'wireframe':
-                this.toggleWireframe();
-                break;
             case 'grid':
                 this.toggleGrid();
                 break;
@@ -544,6 +562,11 @@ class SceneManager {
         
         if (mode && mode !== 'select') {
             this.transformControls.setMode(mode);
+            // Reset to show all axes for other modes
+            this.transformControls.showX = true;
+            this.transformControls.showY = true;
+            this.transformControls.showZ = true;
+            
             // Attach to selected object if any
             const selectedObjects = this.getSelectedObjects();
             if (selectedObjects.length > 0 && selectedObjects[0].mesh) {
@@ -569,7 +592,7 @@ class SceneManager {
      */
     addObject(type, options = {}) {
         const id = `object_${this.nextObjectId++}`;
-        let geometry, material, mesh;
+        let geometry, material, mesh, baseSize = 1.0;
         
         // Create geometry based on type
         switch (type) {
@@ -579,6 +602,7 @@ class SceneManager {
                     options.height || 1,
                     options.depth || 1
                 );
+                baseSize = options.width || 1;
                 break;
             case 'sphere':
                 geometry = new THREE.SphereGeometry(
@@ -586,12 +610,14 @@ class SceneManager {
                     options.widthSegments || 32,
                     options.heightSegments || 16
                 );
+                baseSize = options.radius || 0.5;
                 break;
             case 'plane':
                 geometry = new THREE.PlaneGeometry(
                     options.width || 1,
                     options.height || 1
                 );
+                baseSize = options.width || 1;
                 break;
             case 'cylinder':
                 geometry = new THREE.CylinderGeometry(
@@ -600,6 +626,7 @@ class SceneManager {
                     options.height || 1,
                     options.radialSegments || 8
                 );
+                baseSize = options.radiusTop || 0.5;
                 break;
             // Light placeholders: create a transformable handle (group) so Light component can attach a real light
             case 'light':
@@ -667,17 +694,23 @@ class SceneManager {
         mesh.receiveShadow = true;
         mesh.userData.id = id;
         
+        // Store original geometry for size tool
+        mesh.userData.originalGeometry = geometry;
+        
         // Create object data
         const object = {
             id,
             type,
             name: options.name || `${type}_${this.nextObjectId - 1}`,
             mesh,
+            originalGeometry: geometry, // Store original geometry for size tool
             components: new Map(),
             properties: {
                 position: mesh.position.clone(),
                 rotation: mesh.rotation.clone(),
                 scale: mesh.scale.clone(),
+                size: baseSize, // Default size for uniform scaling
+                baseSize: baseSize,
                 visible: true,
                 ...options
             }
@@ -687,7 +720,8 @@ class SceneManager {
         this.initialPositions.set(id, {
             position: mesh.position.clone(),
             rotation: mesh.rotation.clone(),
-            scale: mesh.scale.clone()
+            scale: mesh.scale.clone(),
+            size: 1.0
         });
         
         // Add to scene and tracking
@@ -1066,6 +1100,7 @@ class SceneManager {
      */
     toggleGrid() {
         this.settings.showGrid = !this.settings.showGrid;
+        
         if (this.gridHelper) {
             this.gridHelper.visible = this.settings.showGrid;
         }
@@ -1177,6 +1212,11 @@ class SceneManager {
                 object.mesh.scale.copy(initialData.scale);
                 object.properties.scale.copy(initialData.scale);
                 
+                // Reset size
+                if (object.properties.size !== undefined) {
+                    object.properties.size = initialData.size || 1.0;
+                }
+                
                 console.log(`Reset object ${id} to initial position:`, initialData.position);
             }
         });
@@ -1185,6 +1225,109 @@ class SceneManager {
         if (this.transformControls && this.transformControls.object) {
             this.transformControls.update();
         }
+    }
+
+    /**
+     * Calculate new dimensions based on scale changes
+     */
+    calculateNewDimensions(originalGeometry, scale) {
+        const dimensions = {};
+        
+        // For size tool, we use uniform scaling, so scale.x, scale.y, scale.z should all be the same
+        const uniformScale = scale.x; // Since we enforce uniform scaling in the transform event
+        
+        if (originalGeometry.type === 'BoxGeometry') {
+            dimensions.width = originalGeometry.parameters.width * uniformScale;
+            dimensions.height = originalGeometry.parameters.height * uniformScale;
+            dimensions.depth = originalGeometry.parameters.depth * uniformScale;
+        } else if (originalGeometry.type === 'SphereGeometry') {
+            dimensions.radius = originalGeometry.parameters.radius * uniformScale;
+        } else if (originalGeometry.type === 'CylinderGeometry') {
+            dimensions.radiusTop = originalGeometry.parameters.radiusTop * uniformScale;
+            dimensions.radiusBottom = originalGeometry.parameters.radiusBottom * uniformScale;
+            dimensions.height = originalGeometry.parameters.height * uniformScale;
+        } else if (originalGeometry.type === 'PlaneGeometry') {
+            dimensions.width = originalGeometry.parameters.width * uniformScale;
+            dimensions.height = originalGeometry.parameters.height * uniformScale;
+        }
+        
+        return dimensions;
+    }
+
+    /**
+     * Update object geometry with new dimensions
+     */
+    updateObjectGeometry(sceneObject, newDimensions) {
+        if (!sceneObject.mesh || !sceneObject.originalGeometry) return;
+        
+        let newGeometry;
+        
+        switch (sceneObject.originalGeometry.type) {
+            case 'BoxGeometry':
+                newGeometry = new THREE.BoxGeometry(
+                    newDimensions.width || 1,
+                    newDimensions.height || 1,
+                    newDimensions.depth || 1
+                );
+                break;
+            case 'SphereGeometry':
+                newGeometry = new THREE.SphereGeometry(
+                    newDimensions.radius || 0.5,
+                    sceneObject.originalGeometry.parameters.widthSegments || 32,
+                    sceneObject.originalGeometry.parameters.heightSegments || 16
+                );
+                break;
+            case 'CylinderGeometry':
+                newGeometry = new THREE.CylinderGeometry(
+                    newDimensions.radiusTop || 0.5,
+                    newDimensions.radiusBottom || 0.5,
+                    newDimensions.height || 1,
+                    sceneObject.originalGeometry.parameters.radialSegments || 8
+                );
+                break;
+            case 'PlaneGeometry':
+                newGeometry = new THREE.PlaneGeometry(
+                    newDimensions.width || 1,
+                    newDimensions.height || 1
+                );
+                break;
+            default:
+                return; // Don't update unsupported geometry types
+        }
+        
+        // Replace the geometry
+        const oldGeometry = sceneObject.mesh.geometry;
+        sceneObject.mesh.geometry = newGeometry;
+        
+        // Dispose of old geometry
+        if (oldGeometry) {
+            oldGeometry.dispose();
+        }
+        
+        // Update properties
+        if (sceneObject.properties.dimensions) {
+            Object.assign(sceneObject.properties.dimensions, newDimensions);
+        } else {
+            sceneObject.properties.dimensions = newDimensions;
+        }
+    }
+
+    /**
+     * Set uniform size for an object (used by inspector and programmatically)
+     */
+    setObjectUniformSize(objectId, size) {
+        const sceneObject = this.objects.get(objectId);
+        if (!sceneObject || !sceneObject.mesh) return;
+        // Clamp size to minimum
+        const minSize = 0.00001;
+        if (typeof size !== 'number' || isNaN(size) || size < minSize) size = minSize;
+        // Use baseSize for relative scaling
+        const baseSize = sceneObject.properties.baseSize || 1.0;
+        const scale = size / baseSize;
+        sceneObject.properties.size = size;
+        sceneObject.mesh.scale.set(scale, scale, scale);
+        // Emit event to update inspector
+        this.eventBus.emit('object:size-updated', { id: objectId, size });
     }
 
     /**

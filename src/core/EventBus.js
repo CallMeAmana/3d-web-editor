@@ -238,6 +238,7 @@ EventBus.Events = {
     OBJECT_DESELECTED: 'object:deselected',
     OBJECT_TRANSFORMED: 'object:transformed',
     OBJECT_PROPERTY_CHANGED: 'object:property_changed',
+    TRANSFORM_COMMAND: 'transform:command',
     
     // Component events
     COMPONENT_ADDED: 'component:added',
