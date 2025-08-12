@@ -35,6 +35,7 @@
             
             <div class="toolbar-group">
                 <button class="tool-btn" id="import-model" title="Import 3D Model">📁</button>
+                <button class="tool-btn" id="plugin-manager-btn" title="Plugin Manager">🧩</button>
             </div>
             
             <div class="toolbar-group">
@@ -129,6 +130,20 @@
             </div>
         </div>
     </div>
+
+    <!-- Plugin Manager Modal -->
+    <div id="plugin-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <span>Plugin Manager</span>
+          <button class="modal-close" onclick="document.getElementById('plugin-modal').classList.add('hidden')">×</button>
+        </div>
+        <div class="modal-body">
+          <div id="plugin-manager-root"></div>
+        </div>
+      </div>
+    </div>
+    <!-- End Plugin Manager Modal -->
 
     <!-- Core Scripts -->
     <script src="src/core/EventBus.js"></script>

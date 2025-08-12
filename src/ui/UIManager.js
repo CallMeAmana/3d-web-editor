@@ -254,6 +254,20 @@ class UIManager {
                 }
             });
         }
+
+        // Plugin Manager button
+        const pluginManagerBtn = document.getElementById('plugin-manager-btn');
+        if (pluginManagerBtn) {
+            pluginManagerBtn.addEventListener('click', () => {
+                // Emit event for plugin manager
+                this.eventBus.emit('ui:plugin-manager-opened');
+                // Show the modal
+                const pluginModal = document.getElementById('plugin-modal');
+                if (pluginModal) {
+                    pluginModal.classList.remove('hidden');
+                }
+            });
+        }
     }
 
     /**
