@@ -129,6 +129,10 @@ class EditorCore {
         // Initialize UI manager
         this.uiManager = new UIManager(this.eventBus, this);
         
+        // Initialize Plugin Manager
+        this.pluginManager = new PluginManager(this.eventBus, this);
+        window.pluginManager = this.pluginManager; // Make globally accessible
+        
         // Setup tool handlers
         this.setupToolHandlers();
         

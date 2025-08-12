@@ -139,7 +139,22 @@
           <button class="modal-close" onclick="document.getElementById('plugin-modal').classList.add('hidden')">×</button>
         </div>
         <div class="modal-body">
-          <div id="plugin-manager-root"></div>
+          <div class="plugin-manager-tabs">
+            <button class="tab-btn active" data-tab="installed">Installed Plugins</button>
+            <button class="tab-btn" data-tab="available">Available Plugins</button>
+          </div>
+          
+          <div class="tab-content active" id="installed-tab">
+            <div id="installed-plugins">
+              <p>Loading installed plugins...</p>
+            </div>
+          </div>
+          
+          <div class="tab-content" id="available-tab">
+            <div id="available-plugins">
+              <p>Loading available plugins...</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

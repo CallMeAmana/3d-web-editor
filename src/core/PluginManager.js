@@ -756,15 +756,24 @@ class PluginManager {
      * Refresh plugin list in UI
      */
     refreshPluginList() {
+        console.log('Refreshing plugin list...');
+        
         const installedPanel = document.getElementById('installed-plugins');
         const availablePanel = document.getElementById('available-plugins');
         
+        console.log('Found installed panel:', installedPanel);
+        console.log('Found available panel:', availablePanel);
+        
         if (installedPanel) {
-            installedPanel.innerHTML = this.renderInstalledPlugins();
+            const installedContent = this.renderInstalledPlugins();
+            console.log('Installed plugins content:', installedContent);
+            installedPanel.innerHTML = installedContent;
         }
         
         if (availablePanel) {
-            availablePanel.innerHTML = this.renderAvailablePlugins();
+            const availableContent = this.renderAvailablePlugins();
+            console.log('Available plugins content:', availableContent);
+            availablePanel.innerHTML = availableContent;
         }
     }
 

@@ -430,11 +430,38 @@ class UIManager {
      * Setup modals
      */
     setupModals() {
-        // Plugin manager modal
+        // Plugin Manager Modal
         const pluginModal = document.getElementById('plugin-modal');
         if (pluginModal) {
-            this.setupModal(pluginModal);
-            this.setupPluginManagerTabs();
+            // Setup tab switching
+            const tabBtns = pluginModal.querySelectorAll('.tab-btn');
+            const tabContents = pluginModal.querySelectorAll('.tab-content');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const targetTab = btn.getAttribute('data-tab');
+                    
+                    // Update active tab button
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Update active tab content
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${targetTab}-tab`) {
+                            content.classList.add('active');
+                        }
+                    });
+                });
+            });
+            
+            // Close button functionality
+            const closeBtn = pluginModal.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    pluginModal.classList.add('hidden');
+                });
+            }
         }
         
         // Settings modal

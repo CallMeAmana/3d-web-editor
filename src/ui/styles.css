@@ -1020,3 +1020,97 @@ button.error {
 .p-16 {
     padding: 16px;
 }
+
+/* Plugin Manager Styles */
+.plugin-manager-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+    background: var(--bg-quaternary);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom-color: var(--accent-primary);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.plugin-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.plugin-item {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.plugin-info h4 {
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.plugin-info p {
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.plugin-info small {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.plugin-actions button {
+    background: var(--accent-primary);
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 12px;
+}
+
+.plugin-actions button:hover {
+    background: var(--accent-secondary);
+    transform: translateY(-1px);
+}
+
+.plugin-actions button:last-child {
+    background: var(--accent-warning);
+}
+
+.plugin-actions button:last-child:hover {
+    background: #ff6600;
+}
