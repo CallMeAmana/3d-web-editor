@@ -107,39 +107,6 @@ class PluginManager {
         // For now, we'll define some built-in plugins
         const builtinPlugins = [
             {
-                id: 'transform-tools',
-                name: 'Transform Tools',
-                version: '1.0.0',
-                description: 'Advanced transform tools for precise object manipulation',
-                author: '3D Web Editor Team',
-                category: 'tools',
-                entryPoint: 'src/plugins/transform-tools/index.js',
-                dependencies: [],
-                permissions: ['scene:modify', 'ui:toolbar']
-            },
-            {
-                id: 'material-editor',
-                name: 'Material Editor',
-                version: '1.0.0',
-                description: 'Advanced material editing and creation tools',
-                author: '3D Web Editor Team',
-                category: 'tools',
-                entryPoint: 'src/plugins/material-editor/index.js',
-                dependencies: [],
-                permissions: ['scene:modify', 'ui:panel']
-            },
-            {
-                id: 'lighting-tools',
-                name: 'Lighting Tools',
-                version: '1.0.0',
-                description: 'Professional lighting setup and management tools',
-                author: '3D Web Editor Team',
-                category: 'tools',
-                entryPoint: 'src/plugins/lighting-tools/index.js',
-                dependencies: [],
-                permissions: ['scene:modify', 'ui:panel']
-            },
-            {
                 id: 'virtual-exhibition',
                 name: 'Virtual Exhibition',
                 version: '1.0.0',
@@ -346,12 +313,6 @@ class PluginManager {
         
         // Create specific plugin based on ID
         switch (manifest.id) {
-            case 'transform-tools':
-                return this.createTransformToolsPlugin(basePlugin);
-            case 'material-editor':
-                return this.createMaterialEditorPlugin(basePlugin);
-            case 'lighting-tools':
-                return this.createLightingToolsPlugin(basePlugin);
             case 'virtual-exhibition':
                 return this.createVirtualExhibitionPlugin(basePlugin);
             case 'elearning-tools':
@@ -361,172 +322,6 @@ class PluginManager {
             default:
                 return basePlugin;
         }
-    }
-
-    /**
-     * Create Transform Tools plugin
-     */
-    createTransformToolsPlugin(basePlugin) {
-        return {
-            ...basePlugin,
-            
-            setupUI() {
-                // Add precision transform controls
-                this.api.addPanel({
-                    id: 'transform-precision',
-                    title: 'Precision Transform',
-                    content: this.createTransformPanel(),
-                    position: 'right'
-                });
-            },
-            
-            createTransformPanel() {
-                return `
-                    <div class="transform-panel">
-                        <h4>Position</h4>
-                        <div class="property-row">
-                            <label>X:</label>
-                            <input type="number" id="pos-x" step="0.1" value="0">
-                        </div>
-                        <div class="property-row">
-                            <label>Y:</label>
-                            <input type="number" id="pos-y" step="0.1" value="0">
-                        </div>
-                        <div class="property-row">
-                            <label>Z:</label>
-                            <input type="number" id="pos-z" step="0.1" value="0">
-                        </div>
-                        
-                        <h4>Rotation</h4>
-                        <div class="property-row">
-                            <label>X:</label>
-                            <input type="number" id="rot-x" step="1" value="0">
-                        </div>
-                        <div class="property-row">
-                            <label>Y:</label>
-                            <input type="number" id="rot-y" step="1" value="0">
-                        </div>
-                        <div class="property-row">
-                            <label>Z:</label>
-                            <input type="number" id="rot-z" step="1" value="0">
-                        </div>
-                        
-                        <h4>Scale</h4>
-                        <div class="property-row">
-                            <label>X:</label>
-                            <input type="number" id="scale-x" step="0.1" value="1">
-                        </div>
-                        <div class="property-row">
-                            <label>Y:</label>
-                            <input type="number" id="scale-y" step="0.1" value="1">
-                        </div>
-                        <div class="property-row">
-                            <label>Z:</label>
-                            <input type="number" id="scale-z" step="0.1" value="1">
-                        </div>
-                        
-                        <button id="apply-transform">Apply Transform</button>
-                        <button id="reset-transform">Reset Transform</button>
-                    </div>
-                `;
-            }
-        };
-    }
-
-    /**
-     * Create Material Editor plugin
-     */
-    createMaterialEditorPlugin(basePlugin) {
-        return {
-            ...basePlugin,
-            
-            setupUI() {
-                this.api.addPanel({
-                    id: 'material-editor',
-                    title: 'Material Editor',
-                    content: this.createMaterialPanel(),
-                    position: 'right'
-                });
-            },
-            
-            createMaterialPanel() {
-                return `
-                    <div class="material-panel">
-                        <h4>Material Properties</h4>
-                        <div class="property-row">
-                            <label>Color:</label>
-                            <input type="color" id="material-color" value="#00ff00">
-                        </div>
-                        <div class="property-row">
-                            <label>Metalness:</label>
-                            <input type="range" id="material-metalness" min="0" max="1" step="0.1" value="0">
-                        </div>
-                        <div class="property-row">
-                            <label>Roughness:</label>
-                            <input type="range" id="material-roughness" min="0" max="1" step="0.1" value="0.5">
-                        </div>
-                        <div class="property-row">
-                            <label>Opacity:</label>
-                            <input type="range" id="material-opacity" min="0" max="1" step="0.1" value="1">
-                        </div>
-                        
-                        <h4>Textures</h4>
-                        <div class="property-row">
-                            <label>Diffuse:</label>
-                            <input type="file" id="diffuse-texture" accept="image/*">
-                        </div>
-                        <div class="property-row">
-                            <label>Normal:</label>
-                            <input type="file" id="normal-texture" accept="image/*">
-                        </div>
-                        
-                        <button id="apply-material">Apply Material</button>
-                        <button id="save-material">Save Material</button>
-                    </div>
-                `;
-            }
-        };
-    }
-
-    /**
-     * Create Lighting Tools plugin
-     */
-    createLightingToolsPlugin(basePlugin) {
-        return {
-            ...basePlugin,
-            
-            setupUI() {
-                this.api.addToolbarButton({
-                    id: 'add-directional-light',
-                    icon: '☀️',
-                    tooltip: 'Add Directional Light',
-                    onClick: () => this.addDirectionalLight()
-                });
-                
-                this.api.addToolbarButton({
-                    id: 'add-point-light',
-                    icon: '💡',
-                    tooltip: 'Add Point Light',
-                    onClick: () => this.addPointLight()
-                });
-            },
-            
-            addDirectionalLight() {
-                this.api.createObject('directional-light', {
-                    intensity: 1,
-                    color: 0xffffff,
-                    position: { x: 5, y: 5, z: 5 }
-                });
-            },
-            
-            addPointLight() {
-                this.api.createObject('point-light', {
-                    intensity: 1,
-                    color: 0xffffff,
-                    distance: 10
-                });
-            }
-        };
     }
 
     /**
@@ -756,24 +551,15 @@ class PluginManager {
      * Refresh plugin list in UI
      */
     refreshPluginList() {
-        console.log('Refreshing plugin list...');
-        
         const installedPanel = document.getElementById('installed-plugins');
         const availablePanel = document.getElementById('available-plugins');
         
-        console.log('Found installed panel:', installedPanel);
-        console.log('Found available panel:', availablePanel);
-        
         if (installedPanel) {
-            const installedContent = this.renderInstalledPlugins();
-            console.log('Installed plugins content:', installedContent);
-            installedPanel.innerHTML = installedContent;
+            installedPanel.innerHTML = this.renderInstalledPlugins();
         }
         
         if (availablePanel) {
-            const availableContent = this.renderAvailablePlugins();
-            console.log('Available plugins content:', availableContent);
-            availablePanel.innerHTML = availableContent;
+            availablePanel.innerHTML = this.renderAvailablePlugins();
         }
     }
 

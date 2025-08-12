@@ -146,22 +146,7 @@ class EditorCore {
      * Initialize plugin system
      */
     async initializePlugins() {
-        // Load core plugins
-        const corePlugins = [
-            'transform-tools',
-            'material-editor',
-            'lighting-tools'
-        ];
-        
-        for (const pluginId of corePlugins) {
-            try {
-                await this.pluginManager.loadPlugin(pluginId);
-            } catch (error) {
-                console.warn(`Failed to load core plugin ${pluginId}:`, error);
-            }
-        }
-        
-        console.log('Plugin system initialized');
+        // No core plugins to load at startup
     }
 
     /**
