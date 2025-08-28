@@ -133,6 +133,9 @@ class EditorCore {
         this.pluginManager = new PluginManager(this.eventBus, this);
         window.pluginManager = this.pluginManager; // Make globally accessible
         
+        // Initialize plugin list
+        this.pluginManager.refreshPluginList();
+        
         // Setup tool handlers
         this.setupToolHandlers();
         

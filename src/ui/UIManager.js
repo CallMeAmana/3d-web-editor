@@ -265,6 +265,10 @@ class UIManager {
                 const pluginModal = document.getElementById('plugin-modal');
                 if (pluginModal) {
                     pluginModal.classList.remove('hidden');
+                    // Refresh plugin list when modal is opened
+                    if (this.editorCore.pluginManager) {
+                        this.editorCore.pluginManager.refreshPluginList();
+                    }
                 }
             });
         }

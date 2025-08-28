@@ -1114,3 +1114,20 @@ button.error {
 .plugin-actions button:last-child:hover {
     background: #ff6600;
 }
+
+/* Plugin button specific styles */
+.load-plugin-btn {
+    background: var(--accent-secondary) !important;
+}
+
+.load-plugin-btn:hover {
+    background: #00cc00 !important;
+}
+
+.unload-plugin-btn {
+    background: var(--accent-warning) !important;
+}
+
+.unload-plugin-btn:hover {
+    background: #ff6600 !important;
+}

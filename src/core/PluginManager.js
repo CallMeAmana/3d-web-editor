@@ -186,6 +186,9 @@ class PluginManager {
                 plugin
             });
             
+            // Immediately refresh the plugin list UI to show the plugin in "Installed" tab
+            this.refreshPluginList();
+            
             console.log(`Plugin ${manifest.name} loaded successfully`);
             return true;
             
@@ -232,6 +235,9 @@ class PluginManager {
                 id: pluginId,
                 manifest
             });
+            
+            // Immediately refresh the plugin list UI to show the plugin back in "Available" tab
+            this.refreshPluginList();
             
             console.log(`Plugin ${manifest.name} unloaded successfully`);
             return true;
@@ -333,7 +339,7 @@ class PluginManager {
             
             setupUI() {
                 this.api.addPanel({
-                    id: 'exhibition-tools',
+                    id: 'virtual-exhibition-tools',
                     title: 'Exhibition Tools',
                     content: this.createExhibitionPanel(),
                     position: 'left'
@@ -344,18 +350,18 @@ class PluginManager {
                 return `
                     <div class="exhibition-panel">
                         <h4>Exhibition Elements</h4>
-                        <button id="add-wall">Add Wall</button>
-                        <button id="add-artwork-frame">Add Artwork Frame</button>
-                        <button id="add-pedestal">Add Pedestal</button>
-                        <button id="add-info-kiosk">Add Info Kiosk</button>
+                        <button id="virtual-exhibition-add-wall">Add Wall</button>
+                        <button id="virtual-exhibition-add-artwork-frame">Add Artwork Frame</button>
+                        <button id="virtual-exhibition-add-pedestal">Add Pedestal</button>
+                        <button id="virtual-exhibition-add-info-kiosk">Add Info Kiosk</button>
                         
                         <h4>Visitor Path</h4>
-                        <button id="create-path">Create Visitor Path</button>
-                        <button id="add-waypoint">Add Waypoint</button>
+                        <button id="virtual-exhibition-create-path">Create Visitor Path</button>
+                        <button id="virtual-exhibition-add-waypoint">Add Waypoint</button>
                         
                         <h4>Lighting Presets</h4>
-                        <button id="gallery-lighting">Gallery Lighting</button>
-                        <button id="museum-lighting">Museum Lighting</button>
+                        <button id="virtual-exhibition-gallery-lighting">Gallery Lighting</button>
+                        <button id="virtual-exhibition-museum-lighting">Museum Lighting</button>
                     </div>
                 `;
             }
@@ -371,7 +377,7 @@ class PluginManager {
             
             setupUI() {
                 this.api.addPanel({
-                    id: 'elearning-tools',
+                    id: 'elearning-tools-panel',
                     title: 'E-Learning Tools',
                     content: this.createELearningPanel(),
                     position: 'left'
@@ -382,18 +388,18 @@ class PluginManager {
                 return `
                     <div class="elearning-panel">
                         <h4>Interactive Elements</h4>
-                        <button id="add-quiz">Add Quiz</button>
-                        <button id="add-hotspot">Add Hotspot</button>
-                        <button id="add-annotation">Add Annotation</button>
-                        <button id="add-video-player">Add Video Player</button>
+                        <button id="elearning-add-quiz">Add Quiz</button>
+                        <button id="elearning-add-hotspot">Add Hotspot</button>
+                        <button id="elearning-add-annotation">Add Annotation</button>
+                        <button id="elearning-add-video-player">Add Video Player</button>
                         
                         <h4>Learning Path</h4>
-                        <button id="create-lesson">Create Lesson</button>
-                        <button id="add-checkpoint">Add Checkpoint</button>
+                        <button id="elearning-create-lesson">Create Lesson</button>
+                        <button id="elearning-add-checkpoint">Add Checkpoint</button>
                         
                         <h4>Assessment</h4>
-                        <button id="add-assessment">Add Assessment</button>
-                        <button id="view-analytics">View Analytics</button>
+                        <button id="elearning-add-assessment">Add Assessment</button>
+                        <button id="elearning-view-analytics">View Analytics</button>
                     </div>
                 `;
             }
@@ -409,7 +415,7 @@ class PluginManager {
             
             setupUI() {
                 this.api.addPanel({
-                    id: 'architecture-tools',
+                    id: 'architecture-viz-tools',
                     title: 'Architecture Tools',
                     content: this.createArchitecturePanel(),
                     position: 'left'
@@ -420,20 +426,20 @@ class PluginManager {
                 return `
                     <div class="architecture-panel">
                         <h4>Building Elements</h4>
-                        <button id="add-wall-arch">Add Wall</button>
-                        <button id="add-window">Add Window</button>
-                        <button id="add-door">Add Door</button>
-                        <button id="add-stairs">Add Stairs</button>
+                        <button id="architecture-add-wall">Add Wall</button>
+                        <button id="architecture-add-window">Add Window</button>
+                        <button id="architecture-add-door">Add Door</button>
+                        <button id="architecture-add-stairs">Add Stairs</button>
                         
                         <h4>Materials Library</h4>
-                        <button id="concrete-material">Concrete</button>
-                        <button id="wood-material">Wood</button>
-                        <button id="glass-material">Glass</button>
-                        <button id="metal-material">Metal</button>
+                        <button id="architecture-concrete-material">Concrete</button>
+                        <button id="architecture-wood-material">Wood</button>
+                        <button id="architecture-glass-material">Glass</button>
+                        <button id="architecture-metal-material">Metal</button>
                         
                         <h4>Visualization</h4>
-                        <button id="create-walkthrough">Create Walkthrough</button>
-                        <button id="render-view">Render View</button>
+                        <button id="architecture-create-walkthrough">Create Walkthrough</button>
+                        <button id="architecture-render-view">Render View</button>
                     </div>
                 `;
             }
@@ -456,6 +462,12 @@ class PluginManager {
         const toolbar = document.getElementById('main-toolbar');
         if (!toolbar) return;
         
+        // Remove existing button if it exists
+        const existingButton = document.getElementById(config.id);
+        if (existingButton) {
+            existingButton.remove();
+        }
+        
         const button = document.createElement('button');
         button.id = config.id;
         button.className = 'tool-btn';
@@ -466,7 +478,10 @@ class PluginManager {
             button.addEventListener('click', config.onClick);
         }
         
+        // Add to the end of the toolbar
         toolbar.appendChild(button);
+        
+        console.log(`Added toolbar button "${config.id}"`);
     }
 
     /**
@@ -479,9 +494,18 @@ class PluginManager {
         
         if (!sidebar) return;
         
+        // Ensure the panel ID is unique and includes the plugin ID
+        const panelId = config.id;
+        
+        // Remove existing panel if it exists
+        const existingPanel = document.getElementById(panelId);
+        if (existingPanel) {
+            existingPanel.remove();
+        }
+        
         const panel = document.createElement('div');
         panel.className = 'panel';
-        panel.id = config.id;
+        panel.id = panelId;
         
         panel.innerHTML = `
             <div class="panel-header">
@@ -493,7 +517,13 @@ class PluginManager {
             </div>
         `;
         
-        sidebar.appendChild(panel);
+        // Insert the panel at the beginning of the sidebar (after existing panels)
+        const existingPanels = sidebar.querySelectorAll('.panel');
+        if (existingPanels.length > 0) {
+            sidebar.insertBefore(panel, existingPanels[existingPanels.length - 1].nextSibling);
+        } else {
+            sidebar.appendChild(panel);
+        }
         
         // Setup panel toggle
         const toggle = panel.querySelector('.panel-toggle');
@@ -504,6 +534,8 @@ class PluginManager {
             content.style.display = isCollapsed ? 'block' : 'none';
             toggle.textContent = isCollapsed ? '−' : '+';
         });
+        
+        console.log(`Added panel "${config.title}" with ID "${panelId}" to ${config.position} sidebar`);
     }
 
     /**
@@ -521,9 +553,25 @@ class PluginManager {
         const toolbarButtons = document.querySelectorAll(`[id^="${pluginId}-"]`);
         toolbarButtons.forEach(button => button.remove());
         
-        // Remove panels
-        const panels = document.querySelectorAll(`[id^="${pluginId}-"]`);
-        panels.forEach(panel => panel.remove());
+        // Remove panels from left sidebar (more specific targeting)
+        const leftSidebar = document.getElementById('left-sidebar');
+        if (leftSidebar) {
+            const pluginPanels = leftSidebar.querySelectorAll(`[id^="${pluginId}-"]`);
+            pluginPanels.forEach(panel => panel.remove());
+        }
+        
+        // Also remove from right sidebar if any
+        const rightSidebar = document.getElementById('right-sidebar');
+        if (rightSidebar) {
+            const pluginPanels = rightSidebar.querySelectorAll(`[id^="${pluginId}-"]`);
+            pluginPanels.forEach(panel => panel.remove());
+        }
+        
+        // Remove any other plugin-related elements
+        const allPluginElements = document.querySelectorAll(`[id^="${pluginId}-"]`);
+        allPluginElements.forEach(element => element.remove());
+        
+        console.log(`Cleaned up UI elements for plugin: ${pluginId}`);
     }
 
     /**
@@ -551,16 +599,67 @@ class PluginManager {
      * Refresh plugin list in UI
      */
     refreshPluginList() {
+        console.log('Refreshing plugin list...');
+        console.log('Loaded plugins:', Array.from(this.loadedPlugins));
+        console.log('Available plugins:', Array.from(this.pluginManifests.keys()));
+        
         const installedPanel = document.getElementById('installed-plugins');
         const availablePanel = document.getElementById('available-plugins');
         
         if (installedPanel) {
             installedPanel.innerHTML = this.renderInstalledPlugins();
+            this.setupPluginButtonListeners();
         }
         
         if (availablePanel) {
             availablePanel.innerHTML = this.renderAvailablePlugins();
+            this.setupPluginButtonListeners();
         }
+    }
+    
+    /**
+     * Setup event listeners for plugin load/unload buttons
+     */
+    setupPluginButtonListeners() {
+        console.log('Setting up plugin button listeners...');
+        
+        // Setup load buttons
+        const loadButtons = document.querySelectorAll('.load-plugin-btn');
+        console.log(`Found ${loadButtons.length} load buttons`);
+        loadButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const pluginId = e.target.getAttribute('data-plugin-id');
+                console.log(`Load button clicked for plugin: ${pluginId}`);
+                if (pluginId) {
+                    try {
+                        await this.loadPlugin(pluginId);
+                        // The UI will be refreshed automatically in loadPlugin
+                    } catch (error) {
+                        console.error(`Failed to load plugin ${pluginId}:`, error);
+                        this.showNotification(`Failed to load plugin: ${error.message}`, 'error');
+                    }
+                }
+            });
+        });
+        
+        // Setup unload buttons
+        const unloadButtons = document.querySelectorAll('.unload-plugin-btn');
+        console.log(`Found ${unloadButtons.length} unload buttons`);
+        unloadButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const pluginId = e.target.getAttribute('data-plugin-id');
+                console.log(`Unload button clicked for plugin: ${pluginId}`);
+                if (pluginId) {
+                    try {
+                        await this.unloadPlugin(pluginId);
+                        // The UI will be refreshed automatically in unloadPlugin
+                    } catch (error) {
+                        console.error(`Failed to unload plugin ${pluginId}:`, error);
+                        this.showNotification(`Failed to unload plugin: ${error.message}`, 'error');
+                    }
+                }
+            });
+        });
     }
 
     /**
@@ -583,7 +682,7 @@ class PluginManager {
                         <small>v${manifest.version} by ${manifest.author}</small>
                     </div>
                     <div class="plugin-actions">
-                        <button onclick="pluginManager.unloadPlugin('${pluginId}')">Unload</button>
+                        <button class="unload-plugin-btn" data-plugin-id="${pluginId}">Unload</button>
                     </div>
                 </div>
             `;
@@ -615,7 +714,7 @@ class PluginManager {
                         <small>v${manifest.version} by ${manifest.author}</small>
                     </div>
                     <div class="plugin-actions">
-                        <button onclick="pluginManager.loadPlugin('${manifest.id}')">Load</button>
+                        <button class="load-plugin-btn" data-plugin-id="${manifest.id}">Load</button>
                     </div>
                 </div>
             `;
