@@ -164,14 +164,15 @@ class SceneManager {
     setupEventListeners() {
         // Handle window resize
         window.addEventListener('resize', () => this.handleResize());
-        
+
         // Handle mouse events for object selection
         this.renderer.domElement.addEventListener('click', (event) => this.onMouseClick(event));
+        this.renderer.domElement.addEventListener('dblclick', (event) => this.onMouseDoubleClick(event));
         this.renderer.domElement.addEventListener('contextmenu', (event) => this.onRightClick(event));
-        
+
         // Setup TransformControls
         this.setupTransformControls();
-        
+
         // Listen for editor events
         this.eventBus.on(EventBus.Events.TOOL_ACTIVATED, (data) => this.onToolActivated(data));
     }
@@ -382,6 +383,67 @@ class SceneManager {
         this.renderer.setSize(width, height);
         
         this.eventBus.emit(EventBus.Events.VIEWPORT_RESIZED, { width, height });
+    }
+
+    /**
+     * Handle mouse double click for camera framing
+     */
+    onMouseDoubleClick(event) {
+        event.preventDefault();
+
+        const rect = this.renderer.domElement.getBoundingClientRect();
+        const mouse = new THREE.Vector2();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
+
+        // Get all selectable objects including their children for complex models
+        const selectableObjects = [];
+        Array.from(this.objects.values()).forEach(obj => {
+            if (obj.mesh && obj.mesh.visible) {
+                selectableObjects.push(obj.mesh);
+                // Add all child meshes for imported models
+                obj.mesh.traverse((child) => {
+                    if (child !== obj.mesh && child.isMesh && child.visible) {
+                        selectableObjects.push(child);
+                    }
+                });
+            }
+        });
+
+        const intersects = raycaster.intersectObjects(selectableObjects);
+
+        if (intersects.length > 0) {
+            const selectedMesh = intersects[0].object;
+
+            // Find the parent object for this mesh
+            let selectedObject = null;
+
+            // First check if it's a direct mesh match
+            selectedObject = Array.from(this.objects.values())
+                .find(obj => obj.mesh === selectedMesh);
+
+            // If not found, check if it's a child of any object
+            if (!selectedObject) {
+                selectedObject = Array.from(this.objects.values())
+                    .find(obj => {
+                        if (!obj.mesh) return false;
+                        let found = false;
+                        obj.mesh.traverse((child) => {
+                            if (child === selectedMesh) {
+                                found = true;
+                            }
+                        });
+                        return found;
+                    });
+            }
+
+            if (selectedObject) {
+                this.focusOnObjectSmooth(selectedObject);
+            }
+        }
     }
 
     /**
@@ -1017,6 +1079,56 @@ class SceneManager {
     }
 
     /**
+     * Focus camera on a specific object with smooth animation
+     * @param {Object} object - The object to focus on
+     */
+    focusOnObjectSmooth(object) {
+        if (!object || !object.mesh) return;
+
+        // Calculate bounding box to get the object's size
+        const box = new THREE.Box3().setFromObject(object.mesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        // Calculate distance based on object size to ensure it fits in view
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = this.camera.fov * (Math.PI / 180);
+        const distance = Math.abs(maxDim / 2 / Math.tan(fov / 2)) * 1.5; // Add some padding
+
+        // Calculate camera position
+        const direction = new THREE.Vector3()
+            .subVectors(this.camera.position, center)
+            .normalize()
+            .multiplyScalar(distance);
+
+        const newPosition = new THREE.Vector3().addVectors(center, direction);
+
+        // Animate camera to new position
+        if (this.controls) {
+            // Smooth transition using Tween.js if available, or direct set
+            if (window.TWEEN) {
+                new TWEEN.Tween(this.camera.position)
+                    .to(newPosition, 500)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start();
+
+                new TWEEN.Tween(this.controls.target)
+                    .to(center, 500)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start()
+                    .onUpdate(() => {
+                        this.controls.update();
+                    });
+            } else {
+                // Fallback: Directly set position and target
+                this.camera.position.copy(newPosition);
+                this.controls.target.copy(center);
+                this.controls.update();
+            }
+        }
+    }
+
+    /**
      * Focus camera on a specific object
      * @param {Object} object - The object to focus on
      * @param {number} [distance=5] - Distance from the object
@@ -1094,9 +1206,6 @@ class SceneManager {
                 this.transformControls.detach();
             }
         }
-        
-        // Focus camera on the selected object
-        this.focusOnObject(object);
         
         // Emit event
         this.eventBus.emit(EventBus.Events.OBJECT_SELECTED, { id, object });

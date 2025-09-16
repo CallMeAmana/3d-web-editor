@@ -67,11 +67,29 @@ class UIManager {
         });
         
         this.eventBus.on(EventBus.Events.COMPONENT_ADDED, (data) => {
-            this.updateInspector();
+            if (data && data.entityId) {
+                const object = this.editorCore.sceneManager.objects.get(data.entityId);
+                if (object) {
+                    this.updateInspector(object);
+                } else {
+                    this.clearInspector();
+                }
+            } else {
+                this.clearInspector();
+            }
         });
         
         this.eventBus.on(EventBus.Events.COMPONENT_REMOVED, (data) => {
-            this.updateInspector();
+            if (data && data.entityId) {
+                const object = this.editorCore.sceneManager.objects.get(data.entityId);
+                if (object) {
+                    this.updateInspector(object);
+                } else {
+                    this.clearInspector();
+                }
+            } else {
+                this.clearInspector();
+            }
         });
         
         // Listen for scene state changes
@@ -572,6 +590,11 @@ class UIManager {
      * Update inspector with object properties
      */
     updateInspector(object) {
+        if (!object) {
+            this.clearInspector();
+            return;
+        }
+        
         const inspectorContent = document.getElementById('inspector-content');
         if (!inspectorContent) return;
         
@@ -1014,7 +1037,7 @@ class UIManager {
             html += `
                 <div class="tree-item ${isSelected ? 'selected' : ''}" data-object-id="${object.id}">
                     <span class="tree-icon">${this.getObjectIcon(object.type)}</span>
-                    <span class="tree-label" onclick="uiManager.selectObjectFromHierarchy('${object.id}')">${object.name}</span>
+                    <span class="tree-label" onclick="uiManager.selectObjectFromHierarchy('${object.id}')" ondblclick="uiManager.focusObjectFromHierarchy('${object.id}')">${object.name}</span>
                     <button class="delete-btn" onclick="uiManager.deleteObject('${object.id}')" title="Delete Object">🗑</button>
                 </div>
             `;
@@ -1044,6 +1067,16 @@ class UIManager {
      */
     selectObjectFromHierarchy(objectId) {
         this.editorCore.sceneManager.selectObject(objectId);
+    }
+
+    /**
+     * Focus object from hierarchy on double-click
+     */
+    focusObjectFromHierarchy(objectId) {
+        const object = this.editorCore.sceneManager.objects.get(objectId);
+        if (object) {
+            this.editorCore.sceneManager.focusOnObjectSmooth(object);
+        }
     }
     
     deleteObject(objectId) {
