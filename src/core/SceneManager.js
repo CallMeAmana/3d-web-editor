@@ -1017,6 +1017,56 @@ class SceneManager {
     }
 
     /**
+     * Focus camera on a specific object
+     * @param {Object} object - The object to focus on
+     * @param {number} [distance=5] - Distance from the object
+     */
+    focusOnObject(object, distance = 5) {
+        if (!object || !object.mesh) return;
+        
+        // Calculate bounding box to get the object's size
+        const box = new THREE.Box3().setFromObject(object.mesh);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+        
+        // Calculate distance based on object size to ensure it fits in view
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const adjustedDistance = Math.max(maxDim * 2, distance);
+        
+        // Calculate camera position
+        const direction = new THREE.Vector3()
+            .subVectors(this.camera.position, center)
+            .normalize()
+            .multiplyScalar(adjustedDistance);
+        
+        const newPosition = new THREE.Vector3().addVectors(center, direction);
+        
+        // Animate camera to new position
+        if (this.controls) {
+            // Smooth transition using Tween.js if available, or direct set
+            if (window.TWEEN) {
+                new TWEEN.Tween(this.camera.position)
+                    .to(newPosition, 500)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start();
+                
+                new TWEEN.Tween(this.controls.target)
+                    .to(center, 500)
+                    .easing(TWEEN.Easing.Quadratic.Out)
+                    .start()
+                    .onUpdate(() => {
+                        this.controls.update();
+                    });
+            } else {
+                // Fallback: Directly set position and target
+                this.camera.position.copy(newPosition);
+                this.controls.target.copy(center);
+                this.controls.update();
+            }
+        }
+    }
+
+    /**
      * Select an object
      */
     selectObject(id) {
@@ -1044,6 +1094,9 @@ class SceneManager {
                 this.transformControls.detach();
             }
         }
+        
+        // Focus camera on the selected object
+        this.focusOnObject(object);
         
         // Emit event
         this.eventBus.emit(EventBus.Events.OBJECT_SELECTED, { id, object });
