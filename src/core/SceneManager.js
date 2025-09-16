@@ -651,166 +651,22 @@ class SceneManager {
 
     /**
      * Add a 3D object to the scene
+     * Note: Only imported models are supported. Basic geometric shapes have been removed.
      */
     addObject(type, options = {}) {
-        const id = `object_${this.nextObjectId++}`;
-        let geometry, material, mesh, baseSize = 1.0;
-        
-        // Create geometry based on type
-        switch (type) {
-            case 'cube':
-                geometry = new THREE.BoxGeometry(
-                    options.width || 1,
-                    options.height || 1,
-                    options.depth || 1
-                );
-                baseSize = options.width || 1;
-                break;
-            case 'sphere':
-                geometry = new THREE.SphereGeometry(
-                    options.radius || 0.5,
-                    options.widthSegments || 32,
-                    options.heightSegments || 16
-                );
-                baseSize = options.radius || 0.5;
-                break;
-            case 'plane':
-                geometry = new THREE.PlaneGeometry(
-                    options.width || 1,
-                    options.height || 1
-                );
-                baseSize = options.width || 1;
-                break;
-            case 'cylinder':
-                geometry = new THREE.CylinderGeometry(
-                    options.radiusTop || 0.5,
-                    options.radiusBottom || 0.5,
-                    options.height || 1,
-                    options.radialSegments || 8
-                );
-                baseSize = options.radiusTop || 0.5;
-                break;
-            // Light placeholders: create a transformable handle (group) so Light component can attach a real light
-            case 'light':
-            case 'directional-light':
-            case 'point-light':
-            case 'spot-light':
-            case 'ambient-light': {
-                // Use an empty Object3D as a transform anchor for the light
-                const anchor = new THREE.Object3D();
-                anchor.position.set(
-                    options.x || 0,
-                    options.y || 0,
-                    options.z || 0
-                );
-                anchor.userData.id = id;
-
-                // Optionally add a tiny gizmo sphere to visualize the anchor (non-rendered in shadows)
-                const gizmoGeometry = new THREE.SphereGeometry(0.05, 8, 8);
-                const gizmoMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-                const gizmo = new THREE.Mesh(gizmoGeometry, gizmoMaterial);
-                gizmo.visible = true;
-                anchor.add(gizmo);
-
-                // Store reference to gizmo for later hiding when real light is added
-                anchor.userData.gizmo = gizmo;
-
-                this.scene.add(anchor);
-
-                const lightObject = {
-                    id,
-                    name: options.name || (type.replace('-light', '') + ' Light'),
-                    type,
-                    mesh: anchor,
-                    properties: {
-                        position: { x: anchor.position.x, y: anchor.position.y, z: anchor.position.z },
-                        rotation: { x: 0, y: 0, z: 0 },
-                        scale: { x: 1, y: 1, z: 1 },
-                        color: options.color || 0xffffff,
-                        intensity: options.intensity || 1,
-                        distance: options.distance || 0
-                    }
-                };
-
-                this.objects.set(id, lightObject);
-                this.eventBus.emit(EventBus.Events.OBJECT_CREATED, { object: lightObject });
-                this.updateStats();
-                return lightObject;
-            }
-            default:
-                console.warn(`Unknown object type: ${type}`);
-                return null;
+        // Only allow imported models
+        if (type !== 'imported-model') {
+            console.warn(`Object type '${type}' is not supported. Only imported models are allowed.`);
+            return null;
         }
-        
-        // Create material
-        material = new THREE.MeshLambertMaterial({
-            color: options.color || 0x00ff00,
-            wireframe: this.settings.wireframe
-        });
-        
-        // Create mesh
-        mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(
-            options.x || 0,
-            options.y || 0,
-            options.z || 0
-        );
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        mesh.userData.id = id;
-        
-        // Store original geometry for size tool
-        mesh.userData.originalGeometry = geometry;
-        
-        // Create object data
-        const object = {
-            id,
-            type,
-            name: options.name || `${type}_${this.nextObjectId - 1}`,
-            mesh,
-            originalGeometry: geometry, // Store original geometry for size tool
-            components: new Map(),
-            properties: {
-                position: mesh.position.clone(),
-                rotation: mesh.rotation.clone(),
-                scale: mesh.scale.clone(),
-                size: baseSize, // Default size for uniform scaling
-                baseSize: baseSize,
-                visible: true,
-                ...options
-            }
-        };
-        
-        // Store initial position for reset functionality
-        this.initialPositions.set(id, {
-            position: mesh.position.clone(),
-            rotation: mesh.rotation.clone(),
-            scale: mesh.scale.clone(),
-            size: 1.0
-        });
-        
-        // Add to scene and tracking
-        this.scene.add(mesh);
-        this.objects.set(id, object);
-        
-        // Emit event
-        this.eventBus.emit(EventBus.Events.OBJECT_CREATED, {
-            object,
-            id,
-            type
-        });
-        
-        return object;
-    }
 
-    /**
-     * Add a primitive object to the scene (wrapper for addObject)
-     */
-    addPrimitive(type, options = {}) {
-        return this.addObject(type, options);
-    }
+        const id = `object_${this.nextObjectId++}`;
 
-    
+        // For imported models, the mesh is created by the import functions
+        // This method is kept for compatibility but should not be used directly
+        console.warn('Use importModel() method for adding imported models to the scene.');
+        return null;
+    }
 
     /**
      * Create a new scene

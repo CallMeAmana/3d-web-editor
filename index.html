@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Web Editor</title>
     <link rel="stylesheet" href="src/ui/styles.css">
-    
+
     <!-- Three.js Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -13,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 </head>
+
 <body>
     <div id="app">
         <!-- Main Toolbar -->
@@ -21,28 +23,29 @@
                 <button class="tool-btn" id="new-scene" title="New Scene">📄</button>
                 <button class="tool-btn" id="open-scene" title="Open Scene">📂</button>
                 <button class="tool-btn" id="save-scene" title="Save Scene">💾</button>
+                <button class="tool-btn" id="auto-save-scene" title="Auto Save Scene">🔄💾</button>
             </div>
-            
+
             <div class="toolbar-group">
                 <button class="tool-btn" id="undo" title="Undo">↶</button>
                 <button class="tool-btn" id="redo" title="Redo">↷</button>
             </div>
-            
+
             <div class="toolbar-group">
                 <button class="tool-btn" id="move-tool" title="Move Tool">↔</button>
                 <button class="tool-btn" id="rotate-tool" title="Rotate Tool">🔄</button>
             </div>
-            
+
             <div class="toolbar-group">
                 <button class="tool-btn" id="import-model" title="Import 3D Model">📁</button>
                 <button class="tool-btn" id="plugin-manager-btn" title="Plugin Manager">🧩</button>
             </div>
-            
+
             <div class="toolbar-group">
                 <button class="tool-btn" id="grid-toggle" title="Toggle Grid">⊞</button>
                 <button class="tool-btn" id="fullscreen-toggle" title="Fullscreen">⛶</button>
             </div>
-            
+
             <div class="toolbar-group">
                 <button class="tool-btn" id="play-scene" title="Play Scene">▶</button>
                 <button class="tool-btn" id="pause-scene" title="Pause Scene">⏸</button>
@@ -133,30 +136,31 @@
 
     <!-- Plugin Manager Modal -->
     <div id="plugin-modal" class="modal hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <span>Plugin Manager</span>
-          <button class="modal-close" onclick="document.getElementById('plugin-modal').classList.add('hidden')">×</button>
-        </div>
-        <div class="modal-body">
-          <div class="plugin-manager-tabs">
-            <button class="tab-btn active" data-tab="installed">Installed Plugins</button>
-            <button class="tab-btn" data-tab="available">Available Plugins</button>
-          </div>
-          
-          <div class="tab-content active" id="installed-tab">
-            <div id="installed-plugins">
-              <p>Loading installed plugins...</p>
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Plugin Manager</span>
+                <button class="modal-close"
+                    onclick="document.getElementById('plugin-modal').classList.add('hidden')">×</button>
             </div>
-          </div>
-          
-          <div class="tab-content" id="available-tab">
-            <div id="available-plugins">
-              <p>Loading available plugins...</p>
+            <div class="modal-body">
+                <div class="plugin-manager-tabs">
+                    <button class="tab-btn active" data-tab="installed">Installed Plugins</button>
+                    <button class="tab-btn" data-tab="available">Available Plugins</button>
+                </div>
+
+                <div class="tab-content active" id="installed-tab">
+                    <div id="installed-plugins">
+                        <p>Loading installed plugins...</p>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="available-tab">
+                    <div id="available-plugins">
+                        <p>Loading available plugins...</p>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
     </div>
     <!-- End Plugin Manager Modal -->
 
@@ -168,16 +172,16 @@
     <script src="src/core/EditorCore.js"></script>
     <script src="src/core/PluginManager.js"></script>
     <script src="src/ui/UIManager.js"></script>
-    
+
     <!-- Main Application Script -->
     <script>
         // Override console.log to capture output
         const originalLog = console.log;
         const originalWarn = console.warn;
         const originalError = console.error;
-        
+
         const consoleOutput = document.getElementById('console-output');
-        
+
         function addToConsole(message, type = 'log') {
             if (consoleOutput) {
                 const timestamp = new Date().toLocaleTimeString();
@@ -188,55 +192,87 @@
                 consoleOutput.scrollTop = consoleOutput.scrollHeight;
             }
         }
-        
-        console.log = function(...args) {
+
+        console.log = function (...args) {
             originalLog.apply(console, args);
             addToConsole(args.join(' '), 'log');
         };
-        
-        console.warn = function(...args) {
+
+        console.warn = function (...args) {
             originalWarn.apply(console, args);
             addToConsole(args.join(' '), 'warn');
         };
-        
-        console.error = function(...args) {
+
+        console.error = function (...args) {
             originalError.apply(console, args);
             addToConsole(args.join(' '), 'error');
         };
-        
+
         // Initialize editor
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 console.log('Initializing 3D Web Editor...');
-                
+
                 // Create core systems
                 const eventBus = new EventBus();
                 const sceneManager = new SceneManager(eventBus);
                 const componentSystem = new ComponentSystem(eventBus);
                 const assetManager = new AssetManager(eventBus);
-                
+
                 // Create editor core
                 const editorCore = new EditorCore(eventBus, sceneManager, componentSystem, assetManager);
                 EditorCore.setInstance(editorCore);
-                
+
                 // Initialize editor (this will also initialize UI)
                 await editorCore.init();
-                
+
                 console.log('Editor initialization complete');
-                
+
                 // Setup global references for UI functions
                 window.uiManager = editorCore.uiManager;
-                
+
+                // Auto save button handler with toggle
+                const autoSaveBtn = document.getElementById('auto-save-scene');
+                let autoSaveActive = false;
+                let autoSaveIntervalId = null;
+
+                function performAutoSave() {
+                    const sceneData = sceneManager.exportScene();
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sceneData));
+                    const dlAnchorElem = document.createElement('a');
+                    dlAnchorElem.setAttribute("href", dataStr);
+                    dlAnchorElem.setAttribute("download", "scene-autosave.json");
+                    dlAnchorElem.click();
+                    console.log('Scene auto-saved');
+                }
+
+                autoSaveBtn.addEventListener('click', () => {
+                    autoSaveActive = !autoSaveActive;
+                    if (autoSaveActive) {
+                        autoSaveBtn.classList.add('active');
+                        // Start auto save every 60 seconds
+                        autoSaveIntervalId = setInterval(performAutoSave, 60000);
+                        console.log('Auto save activated');
+                    } else {
+                        autoSaveBtn.classList.remove('active');
+                        if (autoSaveIntervalId) {
+                            clearInterval(autoSaveIntervalId);
+                            autoSaveIntervalId = null;
+                        }
+                        console.log('Auto save deactivated');
+                    }
+                });
+
                 // UIManager and EditorCore already attach toolbar handlers
                 // Remove duplicate inline handlers to avoid double events
-                
+
             } catch (error) {
                 console.error('Failed to initialize editor:', error);
             }
         });
-        
+
         // Removed inline setupEventHandlers; UI is managed by classes
     </script>
 </body>
-</html>
 
+</html>
