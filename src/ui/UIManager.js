@@ -1009,6 +1009,23 @@ class UIManager {
      */
     setupHierarchy() {
         this.updateHierarchy();
+
+        // Add double-click event listener to hierarchy list for framing
+        const hierarchyTree = document.getElementById('hierarchy-list');
+        if (hierarchyTree) {
+            hierarchyTree.addEventListener('dblclick', (event) => {
+                const target = event.target;
+                if (target && target.classList.contains('tree-label')) {
+                    const objectId = target.parentElement.getAttribute('data-object-id');
+                    if (objectId) {
+                        const object = this.editorCore.sceneManager.objects.get(objectId);
+                        if (object) {
+                            this.editorCore.sceneManager.focusOnObjectSmooth(object);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**

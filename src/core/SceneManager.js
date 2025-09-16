@@ -712,6 +712,9 @@ class SceneManager {
                 gizmo.visible = true;
                 anchor.add(gizmo);
 
+                // Store reference to gizmo for later hiding when real light is added
+                anchor.userData.gizmo = gizmo;
+
                 this.scene.add(anchor);
 
                 const lightObject = {

@@ -438,7 +438,7 @@ class ComponentSystem {
                         light.shadow.mapSize.width = 2048;
                         light.shadow.mapSize.height = 2048;
                         light.shadow.camera.near = 0.5;
-                        light.shadow.camera.far = 50;
+                        light.shadow.camera.far = 500;
                         light.shadow.camera.left = -10;
                         light.shadow.camera.right = 10;
                         light.shadow.camera.top = 10;
@@ -465,6 +465,7 @@ class ComponentSystem {
                         break;
                     default:
                         light = new THREE.PointLight(this.color, this.intensity, this.distance, this.decay);
+                        light.castShadow = this.castShadow;
                 }
                 
                 this.light = light;
@@ -500,7 +501,7 @@ class ComponentSystem {
                     }
                 }
             }
-            
+
             createHelper() {
                 if (!this.light) return;
                 
