@@ -373,51 +373,148 @@ class ComponentSystem {
         this.registerComponent('Light', class Light {
             constructor(entity, data = {}) {
                 this.entity = entity;
-                this.type = data.type || 'directional'; // directional, point, spot, ambient
+                this.lightType = data.lightType || data.type || 'point'; // directional, point, spot, ambient
                 this.color = data.color || 0xffffff;
                 this.intensity = data.intensity || 1;
                 this.distance = data.distance || 0;
+                this.decay = data.decay || 2;
                 this.angle = data.angle || Math.PI / 3;
                 this.penumbra = data.penumbra || 0;
                 this.castShadow = data.castShadow !== undefined ? data.castShadow : true;
                 
-                this.createLight();
+                // Get the scene object to check if it already has a light
+                const sceneObject = this.getSceneObject();
+                if (sceneObject && sceneObject.light) {
+                    // Object already has a light (created by SceneManager), just sync properties
+                    this.light = sceneObject.light;
+                    this.helper = sceneObject.helper;
+                    this.syncWithExistingLight();
+                } else {
+                    // Create new light (for objects that weren't created as lights)
+                    this.createLight();
+                }
+            }
+            
+            syncWithExistingLight() {
+                if (!this.light) return;
+                
+                // Sync component properties with existing light
+                this.color = this.light.color.getHex();
+                this.intensity = this.light.intensity;
+                this.castShadow = this.light.castShadow;
+                
+                if (this.light.distance !== undefined) {
+                    this.distance = this.light.distance;
+                }
+                if (this.light.decay !== undefined) {
+                    this.decay = this.light.decay;
+                }
+                if (this.light.angle !== undefined) {
+                    this.angle = this.light.angle;
+                }
+                if (this.light.penumbra !== undefined) {
+                    this.penumbra = this.light.penumbra;
+                }
+                
+                // Determine light type from the Three.js light
+                if (this.light instanceof THREE.DirectionalLight) {
+                    this.lightType = 'directional';
+                } else if (this.light instanceof THREE.PointLight) {
+                    this.lightType = 'point';
+                } else if (this.light instanceof THREE.SpotLight) {
+                    this.lightType = 'spot';
+                } else if (this.light instanceof THREE.AmbientLight) {
+                    this.lightType = 'ambient';
+                }
             }
             
             createLight() {
                 let light;
                 
-                switch (this.type) {
+                switch (this.lightType) {
                     case 'directional':
                         light = new THREE.DirectionalLight(this.color, this.intensity);
+                        light.castShadow = this.castShadow;
+                        light.shadow.mapSize.width = 2048;
+                        light.shadow.mapSize.height = 2048;
+                        light.shadow.camera.near = 0.5;
+                        light.shadow.camera.far = 50;
+                        light.shadow.camera.left = -10;
+                        light.shadow.camera.right = 10;
+                        light.shadow.camera.top = 10;
+                        light.shadow.camera.bottom = -10;
                         break;
                     case 'point':
-                        light = new THREE.PointLight(this.color, this.intensity, this.distance);
+                        light = new THREE.PointLight(this.color, this.intensity, this.distance, this.decay);
+                        light.castShadow = this.castShadow;
+                        light.shadow.mapSize.width = 1024;
+                        light.shadow.mapSize.height = 1024;
+                        light.shadow.camera.near = 0.1;
+                        light.shadow.camera.far = this.distance || 25;
                         break;
                     case 'spot':
-                        light = new THREE.SpotLight(this.color, this.intensity, this.distance, this.angle, this.penumbra);
+                        light = new THREE.SpotLight(this.color, this.intensity, this.distance, this.angle, this.penumbra, this.decay);
+                        light.castShadow = this.castShadow;
+                        light.shadow.mapSize.width = 1024;
+                        light.shadow.mapSize.height = 1024;
+                        light.shadow.camera.near = 0.1;
+                        light.shadow.camera.far = this.distance || 25;
                         break;
                     case 'ambient':
                         light = new THREE.AmbientLight(this.color, this.intensity);
                         break;
                     default:
-                        light = new THREE.DirectionalLight(this.color, this.intensity);
+                        light = new THREE.PointLight(this.color, this.intensity, this.distance, this.decay);
                 }
                 
-                light.castShadow = this.castShadow;
                 this.light = light;
                 
-                // Add to scene
+                // Create helper
+                this.createHelper();
+                
+                // Add light to scene or object
                 const editor = EditorCore.getInstance();
                 const object = editor.sceneManager.objects.get(this.entity);
                 if (object) {
-                    // Don't replace the existing mesh, just add the light to the scene
-                    editor.sceneManager.scene.add(light);
-                    
-                    // Position the light at the object's position
                     if (object.mesh) {
-                        light.position.copy(object.mesh.position);
+                        // Add light to the object's mesh (anchor)
+                        object.mesh.add(light);
+                        
+                        // Add target for directional and spot lights
+                        if (this.lightType === 'directional' || this.lightType === 'spot') {
+                            light.target.position.set(0, -1, 0);
+                            object.mesh.add(light.target);
+                        }
+                        
+                        // Add helper to the object
+                        if (this.helper) {
+                            object.mesh.add(this.helper);
+                        }
+                        
+                        // Store references in the scene object
+                        object.light = light;
+                        object.helper = this.helper;
+                    } else {
+                        // Fallback: add directly to scene
+                        editor.sceneManager.scene.add(light);
                     }
+                }
+            }
+            
+            createHelper() {
+                if (!this.light) return;
+                
+                switch (this.lightType) {
+                    case 'directional':
+                        this.helper = new THREE.DirectionalLightHelper(this.light, 1);
+                        break;
+                    case 'point':
+                        this.helper = new THREE.PointLightHelper(this.light, 0.5);
+                        break;
+                    case 'spot':
+                        this.helper = new THREE.SpotLightHelper(this.light);
+                        break;
+                    // Ambient lights don't have helpers
                 }
             }
             
@@ -429,12 +526,19 @@ class ComponentSystem {
                     this.light.castShadow = this.castShadow;
                     
                     // Update specific light type properties
-                    if (this.type === 'point' && this.light instanceof THREE.PointLight) {
+                    if (this.lightType === 'point' && this.light instanceof THREE.PointLight) {
                         this.light.distance = this.distance;
-                    } else if (this.type === 'spot' && this.light instanceof THREE.SpotLight) {
+                        this.light.decay = this.decay;
+                    } else if (this.lightType === 'spot' && this.light instanceof THREE.SpotLight) {
                         this.light.angle = this.angle;
                         this.light.penumbra = this.penumbra;
                         this.light.distance = this.distance;
+                        this.light.decay = this.decay;
+                    }
+                    
+                    // Update helper
+                    if (this.helper && this.helper.update) {
+                        this.helper.update();
                     }
                 }
             }
@@ -453,14 +557,62 @@ class ComponentSystem {
                 }
             }
             
-            setType(type) {
-                this.type = type;
+            setType(lightType) {
+                this.lightType = lightType;
                 // Remove old light first
                 if (this.light) {
                     const editor = EditorCore.getInstance();
-                    editor.sceneManager.scene.remove(this.light);
+                    const object = editor.sceneManager.objects.get(this.entity);
+                    if (object && object.mesh) {
+                        object.mesh.remove(this.light);
+                        if (this.helper) {
+                            object.mesh.remove(this.helper);
+                        }
+                    } else {
+                        editor.sceneManager.scene.remove(this.light);
+                    }
                 }
                 this.createLight(); // Recreate light with new type
+            }
+            
+            setDistance(distance) {
+                this.distance = distance;
+                if (this.light && this.light.distance !== undefined) {
+                    this.light.distance = distance;
+                    // Update shadow camera
+                    if (this.light.shadow && this.light.shadow.camera) {
+                        this.light.shadow.camera.far = distance || 25;
+                        this.light.shadow.camera.updateProjectionMatrix();
+                    }
+                }
+            }
+            
+            setDecay(decay) {
+                this.decay = decay;
+                if (this.light && this.light.decay !== undefined) {
+                    this.light.decay = decay;
+                }
+            }
+            
+            setAngle(angle) {
+                this.angle = angle;
+                if (this.light && this.light.angle !== undefined) {
+                    this.light.angle = angle;
+                }
+            }
+            
+            setPenumbra(penumbra) {
+                this.penumbra = penumbra;
+                if (this.light && this.light.penumbra !== undefined) {
+                    this.light.penumbra = penumbra;
+                }
+            }
+            
+            setCastShadow(castShadow) {
+                this.castShadow = castShadow;
+                if (this.light) {
+                    this.light.castShadow = castShadow;
+                }
             }
             
             getSceneObject() {
@@ -471,17 +623,30 @@ class ComponentSystem {
             destroy() {
                 if (this.light) {
                     const editor = EditorCore.getInstance();
-                    editor.sceneManager.scene.remove(this.light);
+                    const object = editor.sceneManager.objects.get(this.entity);
+                    if (object && object.mesh) {
+                        object.mesh.remove(this.light);
+                        if (this.helper) {
+                            object.mesh.remove(this.helper);
+                        }
+                        if (this.light.target) {
+                            object.mesh.remove(this.light.target);
+                        }
+                    } else {
+                        editor.sceneManager.scene.remove(this.light);
+                    }
                     this.light = null;
+                    this.helper = null;
                 }
             }
             
             serialize() {
                 return {
-                    type: this.type,
+                    lightType: this.lightType,
                     color: this.color,
                     intensity: this.intensity,
                     distance: this.distance,
+                    decay: this.decay,
                     angle: this.angle,
                     penumbra: this.penumbra,
                     castShadow: this.castShadow
