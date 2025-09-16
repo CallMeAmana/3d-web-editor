@@ -674,7 +674,7 @@ class UIManager {
                     this.editorCore.sceneManager.renameObject(object.id, newName);
                     
                     // Update the object's name in the hierarchy
-                    const hierarchyItem = document.querySelector(`[data-object-id="${object.id}"] .object-name`);
+                    const hierarchyItem = document.querySelector(`[data-object-id="${object.id}"] .tree-label`);
                     if (hierarchyItem) {
                         hierarchyItem.textContent = newName;
                     }
