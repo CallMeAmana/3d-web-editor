@@ -237,6 +237,7 @@ EventBus.Events = {
     OBJECT_SELECTED: 'object:selected',
     OBJECT_DESELECTED: 'object:deselected',
     OBJECT_TRANSFORMED: 'object:transformed',
+    OBJECT_RENAMED: 'object:renamed',
     OBJECT_PROPERTY_CHANGED: 'object:property_changed',
     TRANSFORM_COMMAND: 'transform:command',
     

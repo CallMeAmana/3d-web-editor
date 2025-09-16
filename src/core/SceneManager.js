@@ -923,6 +923,40 @@ class SceneManager {
     }
 
     /**
+     * Rename an object in the scene
+     * @param {string} id - The ID of the object to rename
+     * @param {string} newName - The new name for the object
+     * @returns {boolean} True if the object was renamed, false otherwise
+     */
+    renameObject(id, newName) {
+        const object = this.objects.get(id);
+        if (!object) {
+            console.warn(`Object with id ${id} not found`);
+            return false;
+        }
+        
+        const oldName = object.name;
+        object.name = newName;
+        
+        // Update the name in the mesh if it exists
+        if (object.mesh) {
+            object.mesh.name = newName;
+            object.mesh.userData.name = newName;
+        }
+        
+        // Emit event for UI updates
+        this.eventBus.emit(EventBus.Events.OBJECT_RENAMED, { 
+            id, 
+            oldName, 
+            newName,
+            object
+        });
+        
+        console.log(`Renamed object from "${oldName}" to "${newName}"`);
+        return true;
+    }
+    
+    /**
      * Remove an object from the scene
      */
     removeObject(id) {

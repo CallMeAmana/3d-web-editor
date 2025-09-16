@@ -575,14 +575,15 @@ class UIManager {
         const inspectorContent = document.getElementById('inspector-content');
         if (!inspectorContent) return;
         
-        if (!object) {
-            this.clearInspector();
-            return;
-        }
-        
+        // Start building the HTML for the inspector
         let html = `
             <div class="object-inspector">
-                <h4>${object.name}</h4>
+                <div class="property-group">
+                    <h6>Name</h6>
+                    <div class="property-row">
+                        <input type="text" id="object-name" value="${object.name || 'Unnamed Object'}" class="object-name-input" placeholder="Enter object name">
+                    </div>
+                </div>
                 <div class="property-group">
                     <h6>Transform</h6>
                     <div class="property-row vertical-inputs">
@@ -639,6 +640,27 @@ class UIManager {
         
         // Setup event listeners for inspector controls
         this.setupInspectorEventListeners(object);
+        
+        // Setup name change handler
+        const nameInput = document.getElementById('object-name');
+        if (nameInput) {
+            nameInput.addEventListener('change', (e) => {
+                const newName = e.target.value.trim();
+                if (newName && newName !== object.name) {
+                    // Update the object's name in the scene manager
+                    this.editorCore.sceneManager.renameObject(object.id, newName);
+                    
+                    // Update the object's name in the hierarchy
+                    const hierarchyItem = document.querySelector(`[data-object-id="${object.id}"] .object-name`);
+                    if (hierarchyItem) {
+                        hierarchyItem.textContent = newName;
+                    }
+                    
+                    // Show feedback to the user
+                    this.editorCore.showMessage(`Renamed to: ${newName}`, 'success');
+                }
+            });
+        }
     }
 
     /**
