@@ -233,35 +233,52 @@
 
                 // Auto save button handler with toggle
                 const autoSaveBtn = document.getElementById('auto-save-scene');
-                let autoSaveActive = false;
+                let autoSaveActive = false; // Default to disabled
                 let autoSaveIntervalId = null;
 
                 function performAutoSave() {
-                    const sceneData = sceneManager.exportScene();
-                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sceneData));
-                    const dlAnchorElem = document.createElement('a');
-                    dlAnchorElem.setAttribute("href", dataStr);
-                    dlAnchorElem.setAttribute("download", "scene-autosave.json");
-                    dlAnchorElem.click();
-                    console.log('Scene auto-saved');
+                    // Only save if auto-save is explicitly enabled
+                    if (!autoSaveActive) {
+                        console.warn('Auto-save attempted but not active');
+                        return;
+                    }
+
+                    try {
+                        const sceneData = sceneManager.exportScene();
+                        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sceneData));
+                        const dlAnchorElem = document.createElement('a');
+                        dlAnchorElem.setAttribute("href", dataStr);
+                        dlAnchorElem.setAttribute("download", "scene-autosave.json");
+                        dlAnchorElem.click();
+                        console.log('Scene auto-saved successfully');
+                    } catch (error) {
+                        console.error('Auto-save failed:', error);
+                    }
                 }
 
                 autoSaveBtn.addEventListener('click', () => {
                     autoSaveActive = !autoSaveActive;
+
+                    // Clear any existing interval first
+                    if (autoSaveIntervalId) {
+                        clearInterval(autoSaveIntervalId);
+                        autoSaveIntervalId = null;
+                    }
+
                     if (autoSaveActive) {
                         autoSaveBtn.classList.add('active');
                         // Start auto save every 60 seconds
                         autoSaveIntervalId = setInterval(performAutoSave, 60000);
-                        console.log('Auto save activated');
+                        console.log('Auto save activated - scene will be saved every 60 seconds');
                     } else {
                         autoSaveBtn.classList.remove('active');
-                        if (autoSaveIntervalId) {
-                            clearInterval(autoSaveIntervalId);
-                            autoSaveIntervalId = null;
-                        }
-                        console.log('Auto save deactivated');
+                        console.log('Auto save deactivated - no automatic saving');
                     }
                 });
+
+                // Ensure auto-save starts disabled
+                autoSaveBtn.classList.remove('active');
+                console.log('Auto-save initialized as disabled');
 
                 // UIManager and EditorCore already attach toolbar handlers
                 // Remove duplicate inline handlers to avoid double events

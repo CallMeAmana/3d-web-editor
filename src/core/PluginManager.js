@@ -113,7 +113,7 @@ class PluginManager {
                 description: 'Tools for creating virtual exhibitions and galleries',
                 author: '3D Web Editor Team',
                 category: 'domain',
-                entryPoint: 'src/plugins/virtual-exhibition/index.js',
+                entryPoint: 'plugins/virtual-exhibition/index.js',
                 dependencies: [],
                 permissions: ['scene:modify', 'ui:panel', 'ui:toolbar']
             },
@@ -124,7 +124,7 @@ class PluginManager {
                 description: 'Interactive e-learning content creation tools',
                 author: '3D Web Editor Team',
                 category: 'domain',
-                entryPoint: 'src/plugins/elearning-tools/index.js',
+                entryPoint: 'plugins/elearning-tools/index.js',
                 dependencies: [],
                 permissions: ['scene:modify', 'ui:panel', 'ui:toolbar']
             },
@@ -135,7 +135,7 @@ class PluginManager {
                 description: 'Tools for architectural visualization and walkthroughs',
                 author: '3D Web Editor Team',
                 category: 'domain',
-                entryPoint: 'src/plugins/architecture-viz/index.js',
+                entryPoint: 'plugins/architecture-viz/index.js',
                 dependencies: [],
                 permissions: ['scene:modify', 'ui:panel', 'ui:toolbar']
             }
@@ -275,11 +275,76 @@ class PluginManager {
      * Load plugin from manifest
      */
     async loadPluginFromManifest(manifest) {
-        // For now, we'll create mock plugins since we don't have actual plugin files
-        // In a real implementation, you would load the actual JavaScript files
-        
-        const mockPlugin = this.createMockPlugin(manifest);
-        return mockPlugin;
+        // Dynamically import the plugin module using its entryPoint
+        try {
+const module = await import(`../${manifest.entryPoint}`);
+            let pluginInstance;
+
+            switch (manifest.id) {
+                case 'virtual-exhibition':
+                    // Use the default export instance from the module
+                    pluginInstance = module.default;
+                    break;
+                case 'elearning-tools':
+                    // For now, fallback to mock plugin
+                    pluginInstance = null;
+                    break;
+                case 'architecture-viz':
+                    // For now, fallback to mock plugin
+                    pluginInstance = null;
+                    break;
+                default:
+                    pluginInstance = null;
+            }
+
+            if (pluginInstance) {
+                // Wrap the plugin instance with basePlugin API
+                const basePlugin = {
+                    id: manifest.id,
+                    name: manifest.name,
+                    version: manifest.version,
+                    api: this.pluginAPI,
+                    async init() {
+                        if (typeof pluginInstance.onLoad === 'function') {
+                            pluginInstance.onLoad(this.api.getEditor());
+                        }
+                        if (typeof pluginInstance.init === 'function') {
+                            await pluginInstance.init();
+                        }
+                    },
+                    async dispose() {
+                        if (typeof pluginInstance.onUnload === 'function') {
+                            pluginInstance.onUnload();
+                        }
+                        if (typeof pluginInstance.dispose === 'function') {
+                            await pluginInstance.dispose();
+                        }
+                    },
+                    setupUI() {
+                        if (typeof pluginInstance.setupUI === 'function') {
+                            pluginInstance.setupUI();
+                        }
+                    },
+                    setupEventListeners() {
+                        if (typeof pluginInstance.setupEventListeners === 'function') {
+                            pluginInstance.setupEventListeners();
+                        }
+                    },
+                    cleanupEventListeners() {
+                        if (typeof pluginInstance.cleanupEventListeners === 'function') {
+                            pluginInstance.cleanupEventListeners();
+                        }
+                    }
+                };
+                return basePlugin;
+            } else {
+                // Fallback to mock plugin
+                return this.createMockPlugin(manifest);
+            }
+        } catch (error) {
+            console.error(`Failed to dynamically import plugin ${manifest.id}:`, error);
+            throw error;
+        }
     }
 
     /**
@@ -334,9 +399,25 @@ class PluginManager {
      * Create Virtual Exhibition plugin
      */
     createVirtualExhibitionPlugin(basePlugin) {
+        // This method is no longer used with dynamic import, but kept for fallback
+        const vepInstance = new window.VirtualExhibitionPlugin();
+
         return {
             ...basePlugin,
-            
+
+            async init() {
+                if (basePlugin.init) await basePlugin.init();
+                vepInstance.onLoad(this.api.getEditor());
+                this.setupUI();
+                this.setupEventListeners();
+            },
+
+            async dispose() {
+                if (basePlugin.dispose) await basePlugin.dispose();
+                vepInstance.onUnload();
+                this.cleanupEventListeners();
+            },
+
             setupUI() {
                 this.api.addPanel({
                     id: 'virtual-exhibition-tools',
@@ -345,7 +426,7 @@ class PluginManager {
                     position: 'left'
                 });
             },
-            
+
             createExhibitionPanel() {
                 return `
                     <div class="exhibition-panel">
@@ -354,16 +435,56 @@ class PluginManager {
                         <button id="virtual-exhibition-add-artwork-frame">Add Artwork Frame</button>
                         <button id="virtual-exhibition-add-pedestal">Add Pedestal</button>
                         <button id="virtual-exhibition-add-info-kiosk">Add Info Kiosk</button>
-                        
+
                         <h4>Visitor Path</h4>
                         <button id="virtual-exhibition-create-path">Create Visitor Path</button>
                         <button id="virtual-exhibition-add-waypoint">Add Waypoint</button>
-                        
+
                         <h4>Lighting Presets</h4>
                         <button id="virtual-exhibition-gallery-lighting">Gallery Lighting</button>
                         <button id="virtual-exhibition-museum-lighting">Museum Lighting</button>
                     </div>
                 `;
+            },
+
+            setupEventListeners() {
+                this._eventHandlers = [];
+
+                const addListener = (id, handler) => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.addEventListener('click', handler);
+                        this._eventHandlers.push({ el, handler });
+                    }
+                };
+
+                addListener('virtual-exhibition-add-wall', () => vepInstance.addWall());
+                addListener('virtual-exhibition-add-artwork-frame', () => vepInstance.addArtworkFrame());
+                addListener('virtual-exhibition-add-pedestal', () => vepInstance.addPedestal());
+                addListener('virtual-exhibition-add-info-kiosk', () => vepInstance.addInfoKiosk());
+
+                // Placeholder for visitor path and lighting presets
+                addListener('virtual-exhibition-create-path', () => {
+                    this.api.showNotification('Create Visitor Path not implemented yet', 'info');
+                });
+                addListener('virtual-exhibition-add-waypoint', () => {
+                    this.api.showNotification('Add Waypoint not implemented yet', 'info');
+                });
+                addListener('virtual-exhibition-gallery-lighting', () => {
+                    this.api.showNotification('Gallery Lighting not implemented yet', 'info');
+                });
+                addListener('virtual-exhibition-museum-lighting', () => {
+                    this.api.showNotification('Museum Lighting not implemented yet', 'info');
+                });
+            },
+
+            cleanupEventListeners() {
+                if (this._eventHandlers) {
+                    this._eventHandlers.forEach(({ el, handler }) => {
+                        el.removeEventListener('click', handler);
+                    });
+                    this._eventHandlers = [];
+                }
             }
         };
     }
